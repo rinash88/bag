@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<!-- saved from url=(0227)file:///Users/irinashamakova/Library/Application%20Support/Claude/local-agent-mode-sessions/53044bd2-c9a6-4617-a0db-78cec625a59b/ac730a1c-92df-4cac-8e8d-3d1ca517f036/local_6329277d-6d3c-4d42-8c27-742ed2adcb85/outputs/index.html -->
+<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Агент по сбору чемодана</title>
+<style>
+  :root{
+    --bg:#0f1216; --card:#171b21; --card2:#1e232b;
+    --accent:#ff7a45; --accent2:#4ade80; --accent3:#60a5fa;
+    --text:#f3f4f6; --muted:#9aa3af; --border:#2a2f38;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0f1216 0%,#12161c 100%);color:var(--text);line-height:1.5;}
+  .wrap{max-width:520px;margin:0 auto;padding:24px 18px 60px;}
+  header{text-align:center;margin-bottom:24px;}
+  .badge{display:inline-block;background:rgba(96,165,250,.15);color:var(--accent3);font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;margin-bottom:14px;}
+  h1{font-size:27px;margin:0 0 10px;font-weight:800;letter-spacing:-.02em;}
+  .sub{color:var(--muted);font-size:15px;max-width:430px;margin:0 auto;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:16px;}
+  .card h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 14px;font-weight:700;}
+
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;}
+  label:first-child{margin-top:0;}
+  input[type=number], input[type=text]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;outline:none;}
+  input:focus{border-color:var(--accent3);}
+  .input-wrap{position:relative;}
+  .input-wrap input[type=text]{padding-right:40px;}
+  .input-wrap .pencil{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);opacity:.8;pointer-events:none;}
+
+  .chips{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+  .chip{padding:9px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:13px;cursor:pointer;user-select:none;}
+  .chip.active{background:var(--accent3);color:#071019;border-color:var(--accent3);font-weight:700;}
+
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
+  .toggle-row span{font-size:14px;}
+  .switch{width:44px;height:26px;background:var(--card2);border:1px solid var(--border);border-radius:20px;position:relative;cursor:pointer;flex-shrink:0;}
+  .switch .knob{width:20px;height:20px;background:var(--muted);border-radius:50%;position:absolute;top:2px;left:2px;transition:all .15s;}
+  .switch.on{background:rgba(96,165,250,.3);border-color:var(--accent3);}
+  .switch.on .knob{left:20px;background:var(--accent3);}
+
+  .btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:transform .1s;}
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--accent3);color:#071019;}
+  .btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+  .btn-ghost{background:transparent;color:var(--accent3);border:1px dashed var(--border);}
+
+  #result{display:none;}
+  .cat-block{margin-bottom:14px;}
+  .cat-title{font-size:13px;font-weight:800;color:var(--accent3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .item-row:last-child{border-bottom:none;}
+  .item-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent3);flex-shrink:0;}
+  .item-row label{margin:0;font-size:14.5px;color:var(--text);cursor:pointer;flex:1;}
+  .item-row.checked label{color:var(--muted);text-decoration:line-through;}
+  .item-link{font-size:12.5px;color:var(--accent3);text-decoration:none;font-weight:700;white-space:nowrap;flex-shrink:0;}
+  .item-link:active{opacity:.7;}
+  .cat-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+  .cat-title-row .cat-title{margin-bottom:0;}
+  .cat-links a{font-size:12px;color:var(--accent3);text-decoration:none;font-weight:700;margin-left:10px;white-space:nowrap;}
+  .progress-line{font-size:12px;color:var(--muted);margin-bottom:14px;}
+
+  .weather-status{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.4;}
+  .manual-toggle{display:inline-block;font-size:12px;color:var(--accent3);text-decoration:none;margin-top:6px;}
+  .note{font-size:12px;color:var(--muted);margin-top:10px;}
+  .warn{font-size:12.5px;color:var(--accent);background:rgba(255,122,69,.1);border-radius:12px;padding:10px 12px;margin-top:10px;}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">Агент · сбор чемодана</span>
+    <h1>Не забудь то, что забываешь всегда</h1>
+    <p class="sub">Пара вопросов — и список именно под твою поездку, а не шаблон из интернета.</p>
+  </header>
+
+  <div class="card" id="form-card">
+    <h2>Куда едешь</h2>
+    <div class="input-wrap">
+      <input type="text" id="destination" placeholder="Город назначения" value="Санкт-Петербург" onchange="detectWeather()" onblur="detectWeather()">
+      <svg class="pencil" aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+      </svg>
+    </div>
+    <div class="weather-status" id="weather-status">Едешь 18–21 июля в Санкт-Петербург: 🌧️ 17°C, дождь (умеренно).</div>
+    <a href="file:///Users/irinashamakova/Library/Application%20Support/Claude/local-agent-mode-sessions/53044bd2-c9a6-4617-a0db-78cec625a59b/ac730a1c-92df-4cac-8e8d-3d1ca517f036/local_6329277d-6d3c-4d42-8c27-742ed2adcb85/outputs/index.html#" class="manual-toggle" id="manual-toggle" onclick="toggleManualClimate(event)">Погода не та? Указать климат вручную</a>
+
+    <h2 style="margin-top:18px;">Тип поездки</h2>
+    <div class="chips" id="trip-chips">
+      <div class="chip active" data-v="weekend">Выходные / коротко</div>
+      <div class="chip" data-v="hike">Поход / бэкпекинг</div>
+      <div class="chip" data-v="business">Командировка</div>
+      <div class="chip" data-v="city">Городской трип</div>
+    </div>
+
+    <label>Сколько дней</label>
+    <input type="number" id="days" min="1" max="30" step="1" value="3">
+
+    <div class="chips" id="climate-chips" style="display:none;">
+      <div class="chip" data-v="cold">Холодно</div>
+      <div class="chip active" data-v="mild">Умеренно</div>
+      <div class="chip" data-v="hot">Жара</div>
+    </div>
+
+    <label>Что ещё будет в поездке</label>
+    <div class="chips" id="activity-chips">
+      <div class="chip" data-v="beach">Пляж</div>
+      <div class="chip" data-v="trekking">Треккинг</div>
+      <div class="chip" data-v="party">Вечеринки / клубы</div>
+      <div class="chip" data-v="sport">Спорт / зал</div>
+      <div class="chip" data-v="meetings">Деловые встречи</div>
+    </div>
+
+    <div class="toggle-row">
+      <span>Только ручная кладь</span>
+      <div class="switch" id="carryon-switch" onclick="toggleCarryon()"><div class="knob"></div></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="buildList()">Собрать список</button>
+  </div>
+
+  <div class="card" id="result">
+    <h2>Твой список <span id="progress-count"></span></h2>
+    <div class="progress-line" id="progress-line"></div>
+    <div id="checklist"></div>
+    <div class="warn" id="carryon-warn" style="display:none;">Ручная кладь: жидкости до 100 мл в бутылке, лекарства и документы — в первую очередь туда. Вес и точные лимиты уточни у своей авиакомпании.</div>
+
+    <div class="cat-block" id="bag-block" style="margin-top:6px;">
+      <div class="cat-title-row"><div class="cat-title">Во что паковать</div></div>
+      <div class="chips" id="bag-chips">
+        <div class="chip" data-v="backpack">🎒 Рюкзак (ручная кладь)</div>
+        <div class="chip" data-v="cabin">🧳 Чемодан кэбин-сайз</div>
+      </div>
+      <div class="weather-status" id="bag-note"></div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="copyList()">Скопировать список</button>
+    <button class="btn btn-ghost" onclick="reset()">Другая поездка</button>
+  </div>
+
+  <div class="card">
+    <h2>Что думаешь?</h2>
+    <p class="note" style="margin-top:0;">Зашло / не зашло / чего не хватает в списке — скажи как есть.</p>
+    <button class="btn btn-secondary" onclick="giveFeedback()">Оставить отклик</button>
+  </div>
+
+  <footer>Агент по сбору чемодана · тестовый прототип</footer>
+</div>
+
+<script>
+let carryon = false;
+let lastChecklist = null;
+let detectedClimate = 'mild';
+let detectedRainy = false;
+let manualClimateOn = false;
+
+const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+// набор правдоподобных сценариев погоды — детерминированные по названию города,
+// чтобы один и тот же город всегда давал одну и ту же картину на демо
+const MOCK_WEATHER = [
+  {temp:17, cond:'дождь', icon:'🌧️', rainy:true},
+  {temp:24, cond:'солнечно', icon:'☀️', rainy:false},
+  {temp:9, cond:'облачно', icon:'☁️', rainy:false},
+  {temp:29, cond:'жара', icon:'🔥', rainy:false},
+  {temp:14, cond:'переменная облачность, местами морось', icon:'⛅', rainy:true},
+];
+
+function classifyClimate(temp){
+  if(temp < 10) return 'cold';
+  if(temp < 24) return 'mild';
+  return 'hot';
+}
+
+function hashCity(city){
+  let h = 0;
+  for(let i=0;i<city.length;i++) h = (h*31 + city.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function formatDateRange(start, end){
+  const sameMonth = start.getMonth() === end.getMonth();
+  const monthName = MONTHS_GEN[end.getMonth()];
+  return sameMonth
+    ? `${start.getDate()}–${end.getDate()} ${monthName}`
+    : `${start.getDate()} ${MONTHS_GEN[start.getMonth()]} – ${end.getDate()} ${monthName}`;
+}
+
+function detectWeather(){
+  if(manualClimateOn) return;
+  const city = document.getElementById('destination').value.trim();
+  const statusEl = document.getElementById('weather-status');
+  if(!city){
+    statusEl.textContent = 'Впиши город — погоду и даты я определю сама, выбирать ничего не нужно.';
+    return;
+  }
+
+  // "уже знаю" даты поездки — считаем от сегодняшнего дня
+  const today = new Date();
+  const start = new Date(today); start.setDate(today.getDate()+2);
+  const days = 4;
+  const end = new Date(start); end.setDate(start.getDate()+days-1);
+  document.getElementById('days').value = days;
+  const dateRange = formatDateRange(start, end);
+
+  // Санкт-Петербург по умолчанию — конкретно +17 и дождь, для остальных городов — детерминированный сценарий
+  const weather = /санкт.?петербург|спб/i.test(city)
+    ? MOCK_WEATHER[0]
+    : MOCK_WEATHER[hashCity(city) % MOCK_WEATHER.length];
+
+  detectedClimate = classifyClimate(weather.temp);
+  detectedRainy = weather.rainy;
+  const climateLabel = {cold:'холодно', mild:'умеренно', hot:'жарко'}[detectedClimate];
+
+  statusEl.textContent = `Едешь ${dateRange} в ${city}: ${weather.icon} ${weather.temp}°C, ${weather.cond} (${climateLabel}).`;
+}
+
+function toggleManualClimate(ev){
+  ev.preventDefault();
+  manualClimateOn = !manualClimateOn;
+  document.getElementById('climate-chips').style.display = manualClimateOn ? 'flex' : 'none';
+  document.getElementById('manual-toggle').textContent = manualClimateOn ? 'Вернуть автоопределение погоды' : 'Погода не та? Указать климат вручную';
+}
+
+const BAG_NOTES = {
+  backpack: 'Рюкзак — влезает как ручная кладь, удобно быстро перемещаться, не нужно ждать багаж.',
+  cabin: 'Чемодан кэбин-сайз — больше места и порядка, особенно если едешь на деловые встречи или дольше 4 дней.'
+};
+
+function recommendBag(trip, days, carryon){
+  if(trip === 'hike') return 'backpack';
+  if(trip === 'business') return 'cabin';
+  if(carryon) return 'backpack';
+  return days <= 3 ? 'backpack' : 'cabin';
+}
+
+function setBag(choice){
+  const container = document.getElementById('bag-chips');
+  [...container.children].forEach(c => c.classList.toggle('active', c.dataset.v === choice));
+  document.getElementById('bag-note').textContent = BAG_NOTES[choice];
+}
+
+document.getElementById('bag-chips').addEventListener('click', (ev) => {
+  const chip = ev.target.closest('.chip');
+  if(!chip) return;
+  setBag(chip.dataset.v);
+});
+
+function toggleCarryon(){
+  carryon = !carryon;
+  document.getElementById('carryon-switch').classList.toggle('on', carryon);
+}
+
+function setupChips(containerId, multi){
+  const container = document.getElementById(containerId);
+  container.addEventListener('click', (ev) => {
+    const chip = ev.target.closest('.chip');
+    if(!chip) return;
+    if(multi){
+      chip.classList.toggle('active');
+    } else {
+      [...container.children].forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    }
+  });
+}
+setupChips('trip-chips', false);
+setupChips('climate-chips', false);
+setupChips('activity-chips', true);
+
+function selectedSingle(containerId){
+  const el = document.getElementById(containerId).querySelector('.chip.active');
+  return el ? el.dataset.v : null;
+}
+function selectedMulti(containerId){
+  return [...document.getElementById(containerId).querySelectorAll('.chip.active')].map(c => c.dataset.v);
+}
+
+function addCat(list, title, items){
+  if(items.length) list.push({title, items});
+}
+
+function buildChecklist(){
+  const trip = selectedSingle('trip-chips') || 'weekend';
+  const climate = manualClimateOn ? (selectedSingle('climate-chips') || 'mild') : detectedClimate;
+  const activities = selectedMulti('activity-chips');
+  const days = Math.max(1, Math.min(30, parseInt(document.getElementById('days').value) || 3));
+
+  const list = [];
+
+  // Документы
+  const docs = ['Паспорт / документы', 'Билеты и брони', 'Страховка'];
+  if(trip === 'business') docs.push('Визитки', 'Документы для командировки');
+  addCat(list, 'Документы', docs);
+
+  // Одежда
+  const shirts = Math.max(2, Math.ceil(days*0.8));
+  const socks = days + 1;
+  const bottoms = Math.max(1, Math.ceil(days/3)+1);
+  const clothes = [`Футболки/рубашки — ${shirts} шт`, `Носки и бельё — ${socks} компл.`, `Штаны/шорты — ${bottoms} шт`, 'Пижама'];
+  if(climate === 'cold') clothes.push('Тёплая куртка', 'Термобельё', 'Шапка и перчатки', 'Тёплые носки доп.');
+  if(climate === 'hot') clothes.push('Головной убор от солнца', 'Лёгкая одежда с запасом');
+  if(climate === 'mild') clothes.push('Лёгкая куртка на вечер');
+  if(activities.includes('party')) clothes.push('Наряд для вечера/клуба');
+  if(activities.includes('meetings')) clothes.push('Деловой комплект');
+  if(activities.includes('sport')) clothes.push('Спортивная форма и кроссовки');
+  if(detectedRainy && !manualClimateOn) clothes.push('Дождевик или зонт');
+  addCat(list, 'Одежда', clothes);
+
+  // Гигиена
+  addCat(list, 'Гигиена', ['Зубная щётка и паста', 'Дезодорант', 'Расчёска', carryon ? 'Мини-версии жидкостей до 100 мл' : 'Шампунь и гель для душа']);
+
+  // Электроника
+  const electronics = ['Зарядка от телефона', 'Повербанк', 'Наушники'];
+  if(trip === 'business') electronics.push('Ноутбук и зарядка к нему');
+  addCat(list, 'Электроника', electronics);
+
+  // Аптечка
+  const meds = ['Обезболивающее', 'Пластырь', 'Личные лекарства'];
+  if(activities.includes('trekking') || trip === 'hike') meds.push('Репеллент от насекомых', 'Средство от солнца');
+  addCat(list, 'Аптечка', meds);
+
+  // По активностям
+  if(activities.includes('beach')) addCat(list, 'Пляж', ['Купальник', 'Полотенце', 'Крем SPF', 'Тапки', 'Солнечные очки']);
+  if(activities.includes('trekking') || trip === 'hike') addCat(list, 'Поход', ['Спальник', 'Коврик', 'Фонарик', 'Горелка и газ', 'Треккинговые палки', 'Нож/мультитул', 'Термос']);
+
+  return { list, carryon, trip, days };
+}
+
+const ITEM_LINKS = {
+  'Страховка': [{label:'Оформить в СберСтраховании', url:'https://sberbankins.ru/products/travel-online/'}]
+};
+const CAT_LINKS = {
+  'Аптечка': [{label:'Купер', url:'https://kuper.ru/categories/lekarstva'}, {label:'Самокат', url:'https://samokat.ru/'}]
+};
+
+function buildList(){
+  const {list, carryon, trip, days} = buildChecklist();
+  const container = document.getElementById('checklist');
+  let allItems = [];
+  container.innerHTML = list.map((cat, ci) => {
+    const catLinksHtml = (CAT_LINKS[cat.title] || [])
+      .map(l => `<a href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`).join('');
+    return `<div class="cat-block">
+      <div class="cat-title-row">
+        <div class="cat-title">${cat.title}</div>
+        ${catLinksHtml ? `<div class="cat-links">${catLinksHtml}</div>` : ''}
+      </div>
+      ${cat.items.map((item, ii) => {
+        const id = `chk-${ci}-${ii}`;
+        allItems.push(item);
+        const itemLinks = ITEM_LINKS[item];
+        const linkHtml = itemLinks ? itemLinks.map(l => `<a class="item-link" href="${l.url}" target="_blank" rel="noopener">${l.label} →</a>`).join('') : '';
+        return `<div class="item-row" id="row-${id}">
+          <input type="checkbox" id="${id}" onchange="toggleItem('${id}')">
+          <label for="${id}">${item}</label>
+          ${linkHtml}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+
+  document.getElementById('carryon-warn').style.display = carryon ? 'block' : 'none';
+  setBag(recommendBag(trip, days, carryon));
+  updateProgress();
+  document.getElementById('form-card').style.display='none';
+  document.getElementById('result').style.display='block';
+  lastChecklist = list;
+}
+
+function toggleItem(id){
+  const row = document.getElementById(`row-${id}`);
+  const box = document.getElementById(id);
+  row.classList.toggle('checked', box.checked);
+  updateProgress();
+}
+
+function updateProgress(){
+  const boxes = document.querySelectorAll('#checklist input[type=checkbox]');
+  const checked = document.querySelectorAll('#checklist input[type=checkbox]:checked').length;
+  document.getElementById('progress-count').textContent = `(${checked}/${boxes.length})`;
+  document.getElementById('progress-line').textContent = checked === boxes.length && boxes.length ? 'Всё собрано — можно ехать 🎒' : 'Отмечай по мере сборов.';
+}
+
+function copyList(){
+  if(!lastChecklist) return;
+  const text = lastChecklist.map(cat => `${cat.title}:\n` + cat.items.map(i => '- '+i).join('\n')).join('\n\n');
+  if(navigator.share){ navigator.share({text}); }
+  else { navigator.clipboard.writeText(text); alert('Список скопирован.'); }
+}
+
+function reset(){
+  document.getElementById('result').style.display='none';
+  document.getElementById('form-card').style.display='block';
+}
+
+function giveFeedback(){
+  const subject = encodeURIComponent('Отклик на Агента по сбору чемодана');
+  const body = encodeURIComponent('Что понравилось / что нет:\n\n');
+  window.location.href = `mailto:i9672380087@gmail.com?subject=${subject}&body=${body}`;
+}
+
+detectWeather();
+</script>
+
+
+</body></html>
