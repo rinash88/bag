@@ -63,6 +63,20 @@
   .item-action:hover{color:var(--accent3);background:rgba(96,165,250,.1);}
   .item-action.delete:hover{color:var(--accent);background:rgba(255,122,69,.1);}
   .item-edit-input{width:100%;background:var(--card2);border:1px solid var(--accent3);border-radius:8px;padding:6px 8px;color:var(--text);font-size:14.5px;outline:none;}
+  .item-edit-weight{width:60px;flex-shrink:0;background:var(--card2);border:1px solid var(--accent3);border-radius:8px;padding:6px 6px;color:var(--text);font-size:13px;outline:none;text-align:right;}
+  .item-weight{font-size:11.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+
+  .progress-wrap{margin:2px 0 10px;}
+  .progress-bar-track{width:100%;height:10px;background:var(--card2);border-radius:20px;overflow:hidden;border:1px solid var(--border);}
+  .progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg, var(--accent3), var(--accent2));border-radius:20px;transition:width .35s ease;}
+  .progress-meta{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted);margin-top:7px;}
+  .progress-meta span:last-child{color:var(--accent2);font-weight:700;}
+
+  .weight-breakdown{margin:2px 0 16px;}
+  .weight-bar{display:flex;width:100%;height:14px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--card2);}
+  .weight-bar span{height:100%;transition:width .3s ease;}
+  .weight-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:11.5px;color:var(--muted);}
+  .weight-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;}
   .cat-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
   .cat-title-row .cat-title{margin-bottom:0;}
   .cat-links a{font-size:12px;color:var(--accent3);text-decoration:none;font-weight:700;margin-left:10px;white-space:nowrap;}
@@ -137,8 +151,19 @@
   </div>
 
   <div class="card" id="result">
-    <h2>Твой список <span id="progress-count"></span></h2>
+    <h2>Твой список</h2>
+    <div class="progress-wrap">
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-bar-fill"></div></div>
+      <div class="progress-meta">
+        <span id="progress-count">0 из 0 собрано</span>
+        <span id="progress-weight"></span>
+      </div>
+    </div>
     <div class="progress-line" id="progress-line"></div>
+    <div class="weight-breakdown" id="weight-breakdown" style="display:none;">
+      <div class="weight-bar" id="weight-bar"></div>
+      <div class="weight-legend" id="weight-legend"></div>
+    </div>
     <div id="checklist"></div>
     <div class="cat-block" id="favorites-block"></div>
     <div class="warn" id="carryon-warn" style="display:none;">Ручная кладь: жидкости до 100 мл в бутылке, лекарства и документы — в первую очередь туда. Вес и точные лимиты уточни у своей авиакомпании.</div>
@@ -477,7 +502,7 @@ function escapeHtml(str){
 
 function buildList(){
   const {list, carryon, trip, days} = buildChecklist();
-  lastChecklist = list.map(cat => ({ title: cat.title, items: cat.items.map(text => ({text, done:false})) }));
+  lastChecklist = list.map(cat => ({ title: cat.title, items: cat.items.map(text => ({text, done:false, weight:0})) }));
 
   renderChecklist();
   document.getElementById('carryon-warn').style.display = carryon ? 'block' : 'none';
@@ -494,6 +519,7 @@ function renderChecklist(){
   const hasAny = lastChecklist.some(cat => cat.items.length);
   if(!hasAny){
     container.innerHTML = '<div class="fav-empty">Список пуст — начни заново или добавь свои пункты в «Мои маст-хэвы» ниже.</div>';
+    document.getElementById('weight-breakdown').style.display = 'none';
     updateProgress();
     return;
   }
@@ -501,19 +527,22 @@ function renderChecklist(){
     if(!cat.items.length) return '';
     const catLinksHtml = (CAT_LINKS[cat.title] || [])
       .map(l => `<a href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`).join('');
+    const catWeight = cat.items.reduce((s,i) => s + (i.weight||0), 0);
     return `<div class="cat-block">
       <div class="cat-title-row">
-        <div class="cat-title">${cat.title}</div>
+        <div class="cat-title">${cat.title}${catWeight > 0 ? ` · ${formatWeight(catWeight)}` : ''}</div>
         ${catLinksHtml ? `<div class="cat-links">${catLinksHtml}</div>` : ''}
       </div>
       ${cat.items.map((item, ii) => {
         const id = `chk-${ci}-${ii}`;
         const itemLinks = ITEM_LINKS[item.text];
         const linkHtml = itemLinks ? itemLinks.map(l => `<a class="item-link" href="${l.url}" target="_blank" rel="noopener">${l.label} →</a>`).join('') : '';
+        const weightHtml = item.weight > 0 ? `<span class="item-weight">${formatWeight(item.weight)}</span>` : '';
         return `<div class="item-row${item.done ? ' checked' : ''}" id="row-${id}">
           <input type="checkbox" id="${id}" ${item.done ? 'checked' : ''} onchange="toggleItem(${ci},${ii},'${id}')">
           <span class="item-main" id="main-${id}">
             <label for="${id}">${escapeHtml(item.text)}</label>
+            ${weightHtml}
             ${linkHtml}
           </span>
           <span class="item-actions" id="actions-${id}">
@@ -528,6 +557,31 @@ function renderChecklist(){
       }).join('')}
     </div>`;
   }).join('');
+  renderWeightBreakdown();
+}
+
+function formatWeight(g){
+  if(!g || g <= 0) return '';
+  return g >= 1000 ? `${(g/1000).toFixed(g % 1000 === 0 ? 0 : 1)} кг` : `${Math.round(g)} г`;
+}
+
+const WEIGHT_PALETTE = ['#60a5fa','#4ade80','#ff7a45','#f472b6','#facc15','#a78bfa','#22d3ee','#fb7185','#34d399','#818cf8'];
+
+function renderWeightBreakdown(){
+  const block = document.getElementById('weight-breakdown');
+  if(!lastChecklist){ block.style.display = 'none'; return; }
+  const cats = lastChecklist
+    .map(cat => ({ title: cat.title, weight: cat.items.reduce((s,i) => s + (i.weight||0), 0) }))
+    .filter(c => c.weight > 0);
+  const total = cats.reduce((s,c) => s + c.weight, 0);
+  if(!total){ block.style.display = 'none'; return; }
+  block.style.display = 'block';
+  document.getElementById('weight-bar').innerHTML = cats.map((c, i) =>
+    `<span style="width:${(c.weight/total*100).toFixed(2)}%;background:${WEIGHT_PALETTE[i % WEIGHT_PALETTE.length]}" title="${c.title}: ${formatWeight(c.weight)}"></span>`
+  ).join('');
+  document.getElementById('weight-legend').innerHTML = cats.map((c, i) =>
+    `<span><span class="dot" style="background:${WEIGHT_PALETTE[i % WEIGHT_PALETTE.length]}"></span>${c.title} — ${formatWeight(c.weight)}</span>`
+  ).join('');
 }
 
 function toggleItem(ci, ii, id){
@@ -542,7 +596,10 @@ function startEditItem(ci, ii){
   const item = lastChecklist[ci].items[ii];
   const mainEl = document.getElementById(`main-${id}`);
   const actionsEl = document.getElementById(`actions-${id}`);
-  mainEl.innerHTML = `<input type="text" class="item-edit-input" id="edit-input-${id}" value="${escapeHtml(item.text)}">`;
+  mainEl.innerHTML = `
+    <input type="text" class="item-edit-input" id="edit-input-${id}" value="${escapeHtml(item.text)}">
+    <input type="number" class="item-edit-weight" id="edit-weight-${id}" placeholder="г" min="0" step="1" value="${item.weight ? item.weight : ''}">
+  `;
   actionsEl.innerHTML = `
     <span class="item-action save" onclick="saveEditItem(${ci},${ii})" title="Сохранить">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -554,18 +611,23 @@ function startEditItem(ci, ii){
   const input = document.getElementById(`edit-input-${id}`);
   input.focus();
   input.select();
-  input.addEventListener('keydown', (ev) => {
+  const onKey = (ev) => {
     if(ev.key === 'Enter'){ ev.preventDefault(); saveEditItem(ci, ii); }
     else if(ev.key === 'Escape'){ ev.preventDefault(); renderChecklist(); }
-  });
+  };
+  input.addEventListener('keydown', onKey);
+  document.getElementById(`edit-weight-${id}`).addEventListener('keydown', onKey);
 }
 
 function saveEditItem(ci, ii){
   const id = `chk-${ci}-${ii}`;
   const input = document.getElementById(`edit-input-${id}`);
+  const weightInput = document.getElementById(`edit-weight-${id}`);
   const val = input.value.trim();
   if(val) lastChecklist[ci].items[ii].text = val;
+  lastChecklist[ci].items[ii].weight = weightInput ? (parseFloat(weightInput.value) || 0) : 0;
   renderChecklist();
+  updateProgress();
 }
 
 function deleteItem(ci, ii){
@@ -587,8 +649,17 @@ function deleteItem(ci, ii){
 function updateProgress(){
   const boxes = document.querySelectorAll('#checklist input[type=checkbox]');
   const checked = document.querySelectorAll('#checklist input[type=checkbox]:checked').length;
-  document.getElementById('progress-count').textContent = `(${checked}/${boxes.length})`;
-  document.getElementById('progress-line').textContent = checked === boxes.length && boxes.length ? 'Всё собрано — можно ехать.' : 'Отмечай по мере сборов.';
+  const total = boxes.length;
+  const pct = total ? Math.round(checked / total * 100) : 0;
+
+  const fill = document.getElementById('progress-bar-fill');
+  if(fill) fill.style.width = pct + '%';
+  document.getElementById('progress-count').textContent = `${checked} из ${total} собрано (${pct}%)`;
+  document.getElementById('progress-line').textContent = checked === total && total ? 'Всё собрано — можно ехать.' : '';
+
+  const totalWeight = lastChecklist ? lastChecklist.reduce((sum, cat) => sum + cat.items.reduce((s,i) => s + (i.weight||0), 0), 0) : 0;
+  const weightEl = document.getElementById('progress-weight');
+  if(weightEl) weightEl.textContent = totalWeight > 0 ? `Вес: ${formatWeight(totalWeight)}` : '';
 }
 
 function copyList(){
