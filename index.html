@@ -163,6 +163,7 @@
     <div class="weight-breakdown" id="weight-breakdown" style="display:none;">
       <div class="weight-bar" id="weight-bar"></div>
       <div class="weight-legend" id="weight-legend"></div>
+      <div class="fav-hint">Вес ориентировочный, по типовому снаряжению — взвешивать ничего не нужно.</div>
     </div>
     <div id="checklist"></div>
     <div class="cat-block" id="favorites-block"></div>
@@ -443,6 +444,76 @@ const CAT_LINKS = {
   'Аптечка': [{label:'Купер', url:'https://kuper.ru/categories/lekarstva'}, {label:'Самокат', url:'https://samokat.ru/'}]
 };
 
+// примерный вес типового снаряжения (граммы) — только для похода/байкпакинга, где вес имеет значение.
+// Проставляется автоматически, ничего взвешивать не нужно — это средние ориентировочные цифры, не точные.
+const ITEM_WEIGHTS = {
+  'Велоджерси / тех.футболки — 2 шт (стираешь по ходу, а не берёшь по числу дней)': 260,
+  'Велошорты с памперсом — 2 пары': 300,
+  'Носки — 2-3 пары (мерино сохнут за ночь)': 150,
+  'Бельё — 2-3 компл.': 150,
+  'Мерино футболка или лонгслив на вечер/сон': 180,
+  'Непромокаемая куртка и штаны — на перевалах может пойти снег даже летом': 500,
+  'Тёплый слой (флис/пуховка) — днём в долине жарко, наверху заморозки': 350,
+  'Непромокаемые перчатки + отдельно лёгкие велоперчатки': 150,
+  'Баф и шапка — от солнца, ветра и холода на высоте': 80,
+  'Сандалии или гортекс-носки — для бродов через реки': 300,
+  'Солнцезащитные очки — высокогорное солнце очень жёсткое': 30,
+  'Дождевик': 300,
+
+  'Зубная щётка и мини-паста': 40,
+  'Мини-дезодорант': 30,
+  'Влажные салфетки': 50,
+  'Мини-мыло или сухой шампунь': 40,
+
+  'Зарядка от телефона': 50,
+  'Повербанк': 250,
+  'Наушники': 50,
+
+  'Обезболивающее': 20,
+  'Пластырь': 15,
+  'Личные лекарства': 30,
+  'Репеллент от насекомых': 100,
+  'Средство от солнца': 100,
+  'Таблетки от горной болезни (если маршрут выше 3000м)': 20,
+  'Средство от расстройства желудка': 20,
+  'Стерильные бинты и антисептик — до жилья может быть далеко': 100,
+  'Крем SPF 50+ — на высоте UV значительно сильнее': 100,
+
+  'Спальник': 900,
+  'Коврик': 400,
+  'Фонарик': 60,
+  'Горелка и газ': 500,
+  'Треккинговые палки': 400,
+  'Нож/мультитул': 150,
+  'Термос': 300,
+
+  'Запасные камеры — 2-3 шт': 300,
+  'Ремкомплект и заплатки (+ герметик, если бескамерка)': 150,
+  'Мультитул: шестигранники 2-8мм и торкс': 150,
+  'Выжимка цепи + запасной замок/пин цепи': 100,
+  'Насос с манометром': 120,
+  'Запасные спицы и спицевой ключ': 60,
+  'Смазка для цепи и тряпка': 100,
+  'Запасной трос тормоза/переключателя': 30,
+  'Запасные тормозные колодки': 40,
+  'Изолента, стяжки, немного проволоки': 50,
+  'Складная запасная покрышка — если маршрут вдали от вело-сервисов': 350,
+
+  'Ветроустойчивая палатка': 1500,
+  'Спальник с комфортом минимум до -5...-10°C — ночью в горах холодно даже летом': 1100,
+  'Коврик, тоже морозостойкий': 450,
+  'Налобный фонарь': 60,
+  'Компактная горелка + топливо на весь автономный участок': 500,
+
+  'Фильтр или обеззараживатель воды — открытые источники пить сырыми нельзя': 100,
+  'Ёмкости на 3-5 литров воды': 200,
+  'Запас еды на 5-7 дней — между посёлками бывает 150-270 км без магазинов': 3000,
+
+  'Ёмкий повербанк или солнечная панель — розетки будут не каждый день': 400,
+  'Спутниковый коммуникатор (например Garmin inReach) — сотовой связи в горах почти нет': 150,
+  'Бумажная карта маршрута как резерв на случай разрядки техники': 20
+};
+
 const FAVORITES_KEY = 'chemodanMastHave';
 
 function loadFavorites(){
@@ -502,7 +573,8 @@ function escapeHtml(str){
 
 function buildList(){
   const {list, carryon, trip, days} = buildChecklist();
-  lastChecklist = list.map(cat => ({ title: cat.title, items: cat.items.map(text => ({text, done:false, weight:0})) }));
+  const weightAware = trip === 'bikepacking' || trip === 'hike';
+  lastChecklist = list.map(cat => ({ title: cat.title, items: cat.items.map(text => ({text, done:false, weight: weightAware ? (ITEM_WEIGHTS[text] || 0) : 0})) }));
 
   renderChecklist();
   document.getElementById('carryon-warn').style.display = carryon ? 'block' : 'none';
@@ -562,7 +634,7 @@ function renderChecklist(){
 
 function formatWeight(g){
   if(!g || g <= 0) return '';
-  return g >= 1000 ? `${(g/1000).toFixed(g % 1000 === 0 ? 0 : 1)} кг` : `${Math.round(g)} г`;
+  return g >= 1000 ? `≈${(g/1000).toFixed(g % 1000 === 0 ? 0 : 1)} кг` : `≈${Math.round(g)} г`;
 }
 
 const WEIGHT_PALETTE = ['#60a5fa','#4ade80','#ff7a45','#f472b6','#facc15','#a78bfa','#22d3ee','#fb7185','#34d399','#818cf8'];
@@ -596,10 +668,7 @@ function startEditItem(ci, ii){
   const item = lastChecklist[ci].items[ii];
   const mainEl = document.getElementById(`main-${id}`);
   const actionsEl = document.getElementById(`actions-${id}`);
-  mainEl.innerHTML = `
-    <input type="text" class="item-edit-input" id="edit-input-${id}" value="${escapeHtml(item.text)}">
-    <input type="number" class="item-edit-weight" id="edit-weight-${id}" placeholder="г" min="0" step="1" value="${item.weight ? item.weight : ''}">
-  `;
+  mainEl.innerHTML = `<input type="text" class="item-edit-input" id="edit-input-${id}" value="${escapeHtml(item.text)}">`;
   actionsEl.innerHTML = `
     <span class="item-action save" onclick="saveEditItem(${ci},${ii})" title="Сохранить">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -611,21 +680,17 @@ function startEditItem(ci, ii){
   const input = document.getElementById(`edit-input-${id}`);
   input.focus();
   input.select();
-  const onKey = (ev) => {
+  input.addEventListener('keydown', (ev) => {
     if(ev.key === 'Enter'){ ev.preventDefault(); saveEditItem(ci, ii); }
     else if(ev.key === 'Escape'){ ev.preventDefault(); renderChecklist(); }
-  };
-  input.addEventListener('keydown', onKey);
-  document.getElementById(`edit-weight-${id}`).addEventListener('keydown', onKey);
+  });
 }
 
 function saveEditItem(ci, ii){
   const id = `chk-${ci}-${ii}`;
   const input = document.getElementById(`edit-input-${id}`);
-  const weightInput = document.getElementById(`edit-weight-${id}`);
   const val = input.value.trim();
   if(val) lastChecklist[ci].items[ii].text = val;
-  lastChecklist[ci].items[ii].weight = weightInput ? (parseFloat(weightInput.value) || 0) : 0;
   renderChecklist();
   updateProgress();
 }
