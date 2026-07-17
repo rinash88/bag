@@ -437,11 +437,24 @@ function buildChecklist(){
   return { list, carryon, trip, days };
 }
 
+const KUPER = {label:'Купер', url:'https://kuper.ru/'};
+const SAMOKAT = {label:'Самокат', url:'https://samokat.ru/'};
+
 const ITEM_LINKS = {
-  'Страховка': [{label:'Оформить в СберСтраховании', url:'https://sberbankins.ru/products/travel-online/'}]
+  'Страховка': [{label:'Оформить в СберСтраховании', url:'https://sberbankins.ru/products/travel-online/'}],
+  'Повербанк': [{...KUPER, url:'https://kuper.ru/categories/elektronika'}, SAMOKAT],
+  'Зарядка от телефона': [SAMOKAT],
+  'Наушники': [SAMOKAT],
+  'Дождевик или зонт': [{...KUPER, url:'https://kuper.ru/categories/tovary-dlya-doma'}],
+  'Дождевик': [{...KUPER, url:'https://kuper.ru/categories/tovary-dlya-doma'}],
+  'Крем SPF': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}],
+  'Крем SPF 50+ — на высоте UV значительно сильнее': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}]
 };
 const CAT_LINKS = {
-  'Аптечка': [{label:'Купер', url:'https://kuper.ru/categories/lekarstva'}, {label:'Самокат', url:'https://samokat.ru/'}]
+  'Аптечка': [{...KUPER, url:'https://kuper.ru/categories/lekarstva'}, SAMOKAT],
+  'Электроника': [{...KUPER, url:'https://kuper.ru/categories/elektronika'}, SAMOKAT],
+  'Гигиена': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}, SAMOKAT],
+  'Пляж': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}]
 };
 
 // примерный вес типового снаряжения (граммы) — только для похода/байкпакинга, где вес имеет значение.
