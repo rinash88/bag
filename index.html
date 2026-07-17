@@ -329,7 +329,7 @@ function buildChecklist(){
     if(climate === 'cold') clothes.push('Тёплая куртка', 'Термобельё', 'Шапка и перчатки', 'Тёплые носки доп.');
     if(climate === 'hot') clothes.push('Головной убор от солнца', 'Лёгкая одежда с запасом');
     if(climate === 'mild') clothes.push('Лёгкая куртка на вечер');
-    if(detectedRainy && !manualClimateOn) clothes.push('Дождевик или зонт');
+    if(detectedRainy && !manualClimateOn) clothes.push(trip === 'hike' ? 'Дождевик' : 'Дождевик или зонт');
   }
   if(activities.includes('party')) clothes.push('Наряд для вечера/клуба');
   if(activities.includes('meetings')) clothes.push('Деловой комплект');
@@ -337,7 +337,12 @@ function buildChecklist(){
   addCat(list, 'Одежда', clothes);
 
   // Гигиена
-  addCat(list, 'Гигиена', ['Зубная щётка и паста', 'Дезодорант', 'Расчёска', carryon ? 'Мини-версии жидкостей до 100 мл' : 'Шампунь и гель для душа']);
+  if(trip === 'bikepacking' || trip === 'hike'){
+    // автономный поход/байкпакинг: минимум веса, без расчёски и полноразмерных флаконов
+    addCat(list, 'Гигиена', ['Зубная щётка и мини-паста', 'Мини-дезодорант', 'Влажные салфетки', 'Мини-мыло или сухой шампунь']);
+  } else {
+    addCat(list, 'Гигиена', ['Зубная щётка и паста', 'Дезодорант', 'Расчёска', carryon ? 'Мини-версии жидкостей до 100 мл' : 'Шампунь и гель для душа']);
+  }
 
   // Электроника
   const electronics = ['Зарядка от телефона', 'Повербанк', 'Наушники'];
