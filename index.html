@@ -61,7 +61,7 @@
   .cat-links a{font-size:12px;color:var(--accent3);text-decoration:none;font-weight:700;margin-left:10px;white-space:nowrap;}
   .progress-line{font-size:12px;color:var(--muted);margin-bottom:14px;}
 
-  .fav-remove{cursor:pointer;color:var(--muted);font-size:14px;padding:2px 6px;flex-shrink:0;border-radius:6px;}
+  .fav-remove{cursor:pointer;color:var(--muted);padding:4px 6px;flex-shrink:0;border-radius:6px;display:inline-flex;align-items:center;}
   .fav-remove:hover{color:var(--accent);background:rgba(255,122,69,.1);}
   .add-row{display:flex;gap:8px;margin-top:10px;}
   .add-row input{flex:1;}
@@ -98,7 +98,7 @@
     <div class="chips" id="trip-chips">
       <div class="chip active" data-v="weekend">Выходные / коротко</div>
       <div class="chip" data-v="hike">Поход / бэкпекинг</div>
-      <div class="chip" data-v="bikepacking">🚵 Байкпакинг</div>
+      <div class="chip" data-v="bikepacking">Байкпакинг</div>
       <div class="chip" data-v="business">Командировка</div>
       <div class="chip" data-v="city">Городской трип</div>
     </div>
@@ -139,8 +139,8 @@
     <div class="cat-block" id="bag-block" style="margin-top:6px;">
       <div class="cat-title-row"><div class="cat-title">Во что паковать</div></div>
       <div class="chips" id="bag-chips">
-        <div class="chip" data-v="backpack">🎒 Рюкзак (ручная кладь)</div>
-        <div class="chip" data-v="cabin">🧳 Чемодан кэбин-сайз</div>
+        <div class="chip" data-v="backpack">Рюкзак (ручная кладь)</div>
+        <div class="chip" data-v="cabin">Чемодан кэбин-сайз</div>
       </div>
       <div class="weather-status" id="bag-note"></div>
     </div>
@@ -170,11 +170,11 @@ const MONTHS_GEN = ['января','февраля','марта','апреля',
 // набор правдоподобных сценариев погоды — детерминированные по названию города,
 // чтобы один и тот же город всегда давал одну и ту же картину на демо
 const MOCK_WEATHER = [
-  {temp:17, cond:'дождь', icon:'🌧️', rainy:true},
-  {temp:24, cond:'солнечно', icon:'☀️', rainy:false},
-  {temp:9, cond:'облачно', icon:'☁️', rainy:false},
-  {temp:29, cond:'жара', icon:'🔥', rainy:false},
-  {temp:14, cond:'переменная облачность, местами морось', icon:'⛅', rainy:true},
+  {temp:17, cond:'дождь', rainy:true},
+  {temp:24, cond:'солнечно', rainy:false},
+  {temp:9, cond:'облачно', rainy:false},
+  {temp:29, cond:'жара', rainy:false},
+  {temp:14, cond:'переменная облачность, местами морось', rainy:true},
 ];
 
 function classifyClimate(temp){
@@ -223,7 +223,7 @@ function detectWeather(){
   detectedRainy = weather.rainy;
   const climateLabel = {cold:'холодно', mild:'умеренно', hot:'жарко'}[detectedClimate];
 
-  statusEl.textContent = `Едешь ${dateRange} в ${city}: ${weather.icon} ${weather.temp}°C, ${weather.cond} (${climateLabel}).`;
+  statusEl.textContent = `Едешь ${dateRange} в ${city}: ${weather.temp}°C, ${weather.cond} (${climateLabel}).`;
 }
 
 function toggleManualClimate(ev){
@@ -348,7 +348,7 @@ function buildChecklist(){
 
   // Байкпакинг — на основе реальных маршрутов (например Tian Shan Traverse в Киргизии)
   if(trip === 'bikepacking'){
-    addCat(list, '🔧 Вело-ремкомплект', [
+    addCat(list, 'Вело-ремкомплект', [
       'Запасные камеры — 2-3 шт',
       'Ремкомплект и заплатки (+ герметик, если бескамерка)',
       'Мультитул: шестигранники 2-8мм и торкс',
@@ -361,26 +361,26 @@ function buildChecklist(){
       'Изолента, стяжки, немного проволоки',
       'Складная запасная покрышка — если маршрут вдали от вело-сервисов'
     ]);
-    addCat(list, '⛺ Бивуак в горах', [
+    addCat(list, 'Бивуак в горах', [
       'Ветроустойчивая палатка',
       'Спальник с комфортом минимум до -5...-10°C — ночью в горах холодно даже летом',
       'Коврик, тоже морозостойкий',
       'Налобный фонарь',
       'Компактная горелка + топливо на весь автономный участок'
     ]);
-    addCat(list, '💧 Вода и еда в диких местах', [
+    addCat(list, 'Вода и еда в диких местах', [
       'Фильтр или обеззараживатель воды — открытые источники пить сырыми нельзя',
       'Ёмкости на 3-5 литров воды',
       'Запас еды на 5-7 дней — между посёлками бывает 150-270 км без магазинов',
       'Основные закупки — заранее в крупном городе, в мелких посёлках выбор очень скудный'
     ]);
-    addCat(list, '🧭 Навигация и связь', [
+    addCat(list, 'Навигация и связь', [
       'Офлайн GPS-трек маршрута (Ride with GPS / Maps.me)',
       'Ёмкий повербанк или солнечная панель — розетки будут не каждый день',
       'Спутниковый коммуникатор (например Garmin inReach) — сотовой связи в горах почти нет',
       'Бумажная карта маршрута как резерв на случай разрядки техники'
     ]);
-    addCat(list, '💰 Деньги и документы в пути', [
+    addCat(list, 'Деньги и документы в пути', [
       'Наличные — обмен и банкоматы есть только в крупных городах по маршруту',
       'Купюры некрупного номинала для мелких посёлков',
       'Копия паспорта отдельно от оригинала',
@@ -416,12 +416,14 @@ function renderFavorites(){
       <div class="item-row">
         <input type="checkbox" id="fav-${i}" checked>
         <label for="fav-${i}">${item}</label>
-        <span class="fav-remove" onclick="removeFavorite(${i})" title="Убрать из маст-хэвов">✕</span>
+        <span class="fav-remove" onclick="removeFavorite(${i})" title="Убрать из маст-хэвов">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </span>
       </div>`).join('')
     : `<div class="fav-empty">Пока пусто — добавь то, что берёшь в каждую поездку, и агент больше не будет спрашивать.</div>`;
 
   document.getElementById('favorites-block').innerHTML = `
-    <div class="cat-title-row"><div class="cat-title">🎯 Мои маст-хэвы</div></div>
+    <div class="cat-title-row"><div class="cat-title">Мои маст-хэвы</div></div>
     ${itemsHtml}
     <div class="add-row">
       <input type="text" id="new-fav-input" placeholder="Например: наушники, powerbank..." onkeydown="if(event.key==='Enter'){addFavorite();}">
@@ -496,7 +498,7 @@ function updateProgress(){
   const boxes = document.querySelectorAll('#checklist input[type=checkbox]');
   const checked = document.querySelectorAll('#checklist input[type=checkbox]:checked').length;
   document.getElementById('progress-count').textContent = `(${checked}/${boxes.length})`;
-  document.getElementById('progress-line').textContent = checked === boxes.length && boxes.length ? 'Всё собрано — можно ехать 🎒' : 'Отмечай по мере сборов.';
+  document.getElementById('progress-line').textContent = checked === boxes.length && boxes.length ? 'Всё собрано — можно ехать.' : 'Отмечай по мере сборов.';
 }
 
 function copyList(){
