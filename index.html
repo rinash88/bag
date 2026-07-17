@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0227)file:///Users/irinashamakova/Library/Application%20Support/Claude/local-agent-mode-sessions/53044bd2-c9a6-4617-a0db-78cec625a59b/ac730a1c-92df-4cac-8e8d-3d1ca517f036/local_6329277d-6d3c-4d42-8c27-742ed2adcb85/outputs/index.html -->
-<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Агент по сбору чемодана</title>
 <style>
@@ -61,6 +61,13 @@
   .cat-links a{font-size:12px;color:var(--accent3);text-decoration:none;font-weight:700;margin-left:10px;white-space:nowrap;}
   .progress-line{font-size:12px;color:var(--muted);margin-bottom:14px;}
 
+  .fav-remove{cursor:pointer;color:var(--muted);font-size:14px;padding:2px 6px;flex-shrink:0;border-radius:6px;}
+  .fav-remove:hover{color:var(--accent);background:rgba(255,122,69,.1);}
+  .add-row{display:flex;gap:8px;margin-top:10px;}
+  .add-row input{flex:1;}
+  .add-row button{width:auto;margin-top:0;padding:12px 16px;white-space:nowrap;}
+  .fav-empty{font-size:13px;color:var(--muted);margin:0 0 10px;}
+  .fav-hint{font-size:11.5px;color:var(--muted);margin-top:8px;}
   .weather-status{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.4;}
   .manual-toggle{display:inline-block;font-size:12px;color:var(--accent3);text-decoration:none;margin-top:6px;}
   .note{font-size:12px;color:var(--muted);margin-top:10px;}
@@ -84,8 +91,8 @@
         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
       </svg>
     </div>
-    <div class="weather-status" id="weather-status">Едешь 18–21 июля в Санкт-Петербург: 🌧️ 17°C, дождь (умеренно).</div>
-    <a href="file:///Users/irinashamakova/Library/Application%20Support/Claude/local-agent-mode-sessions/53044bd2-c9a6-4617-a0db-78cec625a59b/ac730a1c-92df-4cac-8e8d-3d1ca517f036/local_6329277d-6d3c-4d42-8c27-742ed2adcb85/outputs/index.html#" class="manual-toggle" id="manual-toggle" onclick="toggleManualClimate(event)">Погода не та? Указать климат вручную</a>
+    <div class="weather-status" id="weather-status">Впиши город — погоду там я узнаю сама, выбирать климат не нужно.</div>
+    <a href="#" class="manual-toggle" id="manual-toggle" onclick="toggleManualClimate(event)">Погода не та? Указать климат вручную</a>
 
     <h2 style="margin-top:18px;">Тип поездки</h2>
     <div class="chips" id="trip-chips">
@@ -125,6 +132,7 @@
     <h2>Твой список <span id="progress-count"></span></h2>
     <div class="progress-line" id="progress-line"></div>
     <div id="checklist"></div>
+    <div class="cat-block" id="favorites-block"></div>
     <div class="warn" id="carryon-warn" style="display:none;">Ручная кладь: жидкости до 100 мл в бутылке, лекарства и документы — в первую очередь туда. Вес и точные лимиты уточни у своей авиакомпании.</div>
 
     <div class="cat-block" id="bag-block" style="margin-top:6px;">
@@ -336,6 +344,57 @@ const CAT_LINKS = {
   'Аптечка': [{label:'Купер', url:'https://kuper.ru/categories/lekarstva'}, {label:'Самокат', url:'https://samokat.ru/'}]
 };
 
+const FAVORITES_KEY = 'chemodanMastHave';
+
+function loadFavorites(){
+  try{ return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+
+function saveFavoritesArr(arr){
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(arr));
+}
+
+function renderFavorites(){
+  const favs = loadFavorites();
+  const itemsHtml = favs.length
+    ? favs.map((item, i) => `
+      <div class="item-row">
+        <input type="checkbox" id="fav-${i}" checked>
+        <label for="fav-${i}">${item}</label>
+        <span class="fav-remove" onclick="removeFavorite(${i})" title="Убрать из маст-хэвов">✕</span>
+      </div>`).join('')
+    : `<div class="fav-empty">Пока пусто — добавь то, что берёшь в каждую поездку, и агент больше не будет спрашивать.</div>`;
+
+  document.getElementById('favorites-block').innerHTML = `
+    <div class="cat-title-row"><div class="cat-title">🎯 Мои маст-хэвы</div></div>
+    ${itemsHtml}
+    <div class="add-row">
+      <input type="text" id="new-fav-input" placeholder="Например: наушники, powerbank..." onkeydown="if(event.key==='Enter'){addFavorite();}">
+      <button class="btn btn-secondary" onclick="addFavorite()">+ Запомнить</button>
+    </div>
+    <div class="fav-hint">Сохраняется на этом устройстве и подтянется в любую следующую поездку — сюда добавлять не нужно каждый раз заново.</div>
+  `;
+}
+
+function addFavorite(){
+  const input = document.getElementById('new-fav-input');
+  const val = input.value.trim();
+  if(!val) return;
+  const favs = loadFavorites();
+  favs.push(val);
+  saveFavoritesArr(favs);
+  input.value = '';
+  renderFavorites();
+}
+
+function removeFavorite(index){
+  const favs = loadFavorites();
+  favs.splice(index, 1);
+  saveFavoritesArr(favs);
+  renderFavorites();
+}
+
 function buildList(){
   const {list, carryon, trip, days} = buildChecklist();
   const container = document.getElementById('checklist');
@@ -364,6 +423,7 @@ function buildList(){
 
   document.getElementById('carryon-warn').style.display = carryon ? 'block' : 'none';
   setBag(recommendBag(trip, days, carryon));
+  renderFavorites();
   updateProgress();
   document.getElementById('form-card').style.display='none';
   document.getElementById('result').style.display='block';
@@ -386,7 +446,11 @@ function updateProgress(){
 
 function copyList(){
   if(!lastChecklist) return;
-  const text = lastChecklist.map(cat => `${cat.title}:\n` + cat.items.map(i => '- '+i).join('\n')).join('\n\n');
+  let text = lastChecklist.map(cat => `${cat.title}:\n` + cat.items.map(i => '- '+i).join('\n')).join('\n\n');
+  const favs = loadFavorites();
+  if(favs.length){
+    text += '\n\nМои маст-хэвы:\n' + favs.map(i => '- '+i).join('\n');
+  }
   if(navigator.share){ navigator.share({text}); }
   else { navigator.clipboard.writeText(text); alert('Список скопирован.'); }
 }
@@ -404,6 +468,5 @@ function giveFeedback(){
 
 detectWeather();
 </script>
-
-
-</body></html>
+</body>
+</html>
