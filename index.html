@@ -97,6 +97,23 @@
 </style>
 </head>
 <body>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   m[i].l=1*new Date();
+   for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+   k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+   ym(110908769, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true,
+        webvisor:true
+   });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/110908769" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
 <div class="wrap">
   <header>
     <span class="badge">Агент · сбор чемодана</span>
@@ -576,6 +593,7 @@ function addFavorite(){
   saveFavoritesArr(favs);
   input.value = '';
   renderFavorites();
+  ymGoal('add_favorite');
 }
 
 function removeFavorite(index){
@@ -589,10 +607,18 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
+const YM_ID = 110908769;
+function ymGoal(name, params){
+  if(typeof ym === 'function'){ ym(YM_ID, 'reachGoal', name, params); }
+}
+let checklistInteracted = false;
+
 function buildList(){
   const {list, carryon, trip, days} = buildChecklist();
   const weightAware = trip === 'bikepacking' || trip === 'hike';
   lastChecklist = list.map(cat => ({ title: cat.title, items: cat.items.map(text => ({text, done:false, weight: weightAware ? (ITEM_WEIGHTS[text] || 0) : 0})) }));
+  checklistInteracted = false;
+  ymGoal('build_list', {trip});
 
   renderChecklist();
   document.getElementById('carryon-warn').style.display = carryon ? 'block' : 'none';
@@ -616,7 +642,7 @@ function renderChecklist(){
   container.innerHTML = lastChecklist.map((cat, ci) => {
     if(!cat.items.length) return '';
     const catLinksHtml = (CAT_LINKS[cat.title] || [])
-      .map(l => `<a href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`).join('');
+      .map(l => `<a href="${l.url}" target="_blank" rel="noopener" onclick="ymGoal('affiliate_click',{service:'${l.label}',place:'category'})">${l.label}</a>`).join('');
     const catWeight = cat.items.reduce((s,i) => s + (i.weight||0), 0);
     return `<div class="cat-block">
       <div class="cat-title-row">
@@ -626,7 +652,7 @@ function renderChecklist(){
       ${cat.items.map((item, ii) => {
         const id = `chk-${ci}-${ii}`;
         const itemLinks = ITEM_LINKS[item.text];
-        const linkHtml = itemLinks ? itemLinks.map(l => `<a class="item-link" href="${l.url}" target="_blank" rel="noopener">${l.label} →</a>`).join('') : '';
+        const linkHtml = itemLinks ? itemLinks.map(l => `<a class="item-link" href="${l.url}" target="_blank" rel="noopener" onclick="ymGoal('affiliate_click',{service:'${l.label}',place:'item'})">${l.label} →</a>`).join('') : '';
         const weightHtml = item.weight > 0 ? `<span class="item-weight">${formatWeight(item.weight)}</span>` : '';
         return `<div class="item-row${item.done ? ' checked' : ''}" id="row-${id}">
           <input type="checkbox" id="${id}" ${item.done ? 'checked' : ''} onchange="toggleItem(${ci},${ii},'${id}')">
@@ -678,6 +704,10 @@ function toggleItem(ci, ii, id){
   const box = document.getElementById(id);
   lastChecklist[ci].items[ii].done = box.checked;
   document.getElementById(`row-${id}`).classList.toggle('checked', box.checked);
+  if(!checklistInteracted && box.checked){
+    checklistInteracted = true;
+    ymGoal('item_checked');
+  }
   updateProgress();
 }
 
@@ -752,6 +782,7 @@ function copyList(){
   if(favs.length){
     text += '\n\nМои маст-хэвы:\n' + favs.map(i => '- '+i).join('\n');
   }
+  ymGoal('copy_list');
   if(navigator.share){ navigator.share({text}); }
   else { navigator.clipboard.writeText(text); alert('Список скопирован.'); }
 }
