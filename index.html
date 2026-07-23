@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Агент по сбору чемодана</title>
+<title>Mala — сборы в поездку</title>
 <style>
   :root{
     --bg:#0f1216; --card:#171b21; --card2:#1e232b;
@@ -124,7 +124,7 @@
 <!-- /Yandex.Metrika counter -->
 <div class="wrap">
   <header>
-    <span class="badge">Агент · сбор чемодана</span>
+    <span class="badge">Mala</span>
     <h1>Не забудь то, что забываешь всегда</h1>
     <p class="sub">Пара вопросов — и список именно под твою поездку, а не шаблон из интернета.</p>
   </header>
@@ -225,7 +225,7 @@
     <button class="btn btn-secondary" onclick="giveFeedback()">Оставить отклик</button>
   </div>
 
-  <footer>Агент по сбору чемодана · тестовый прототип</footer>
+  <footer>Mala · сборы в поездку</footer>
 </div>
 
 <script>
@@ -237,15 +237,9 @@ let manualClimateOn = false;
 
 const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 
-// набор правдоподобных сценариев погоды — детерминированные по названию города,
-// чтобы один и тот же город всегда давал одну и ту же картину на демо
-const MOCK_WEATHER = [
-  {temp:17, cond:'дождь', rainy:true},
-  {temp:24, cond:'солнечно', rainy:false},
-  {temp:9, cond:'облачно', rainy:false},
-  {temp:29, cond:'жара', rainy:false},
-  {temp:14, cond:'переменная облачность, местами морось', rainy:true},
-];
+// Реальная погода из Open-Meteo (бесплатно, без API-ключа, работает для любого города мира)
+const RAIN_CODES = [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99];
+const SNOW_CODES = [71,73,75,77,85,86];
 
 function classifyClimate(temp){
   if(temp < 10) return 'cold';
@@ -253,10 +247,23 @@ function classifyClimate(temp){
   return 'hot';
 }
 
-function hashCity(city){
-  let h = 0;
-  for(let i=0;i<city.length;i++) h = (h*31 + city.charCodeAt(i)) >>> 0;
-  return h;
+function weatherCodeText(code){
+  if(code === 0) return 'ясно';
+  if(code === 1) return 'преимущественно ясно';
+  if(code === 2) return 'переменная облачность';
+  if(code === 3) return 'пасмурно';
+  if(code === 45 || code === 48) return 'туман';
+  if([51,53,55].includes(code)) return 'морось';
+  if([56,57].includes(code)) return 'ледяная морось';
+  if([61,63,65].includes(code)) return 'дождь';
+  if([66,67].includes(code)) return 'ледяной дождь';
+  if([71,73,75].includes(code)) return 'снег';
+  if(code === 77) return 'снежная крупа';
+  if([80,81,82].includes(code)) return 'ливень';
+  if([85,86].includes(code)) return 'снегопад';
+  if(code === 95) return 'гроза';
+  if([96,99].includes(code)) return 'гроза с градом';
+  return 'переменчивая погода';
 }
 
 function formatDateRange(start, end){
@@ -267,33 +274,64 @@ function formatDateRange(start, end){
     : `${start.getDate()} ${MONTHS_GEN[start.getMonth()]} – ${end.getDate()} ${monthName}`;
 }
 
-function detectWeather(){
+let weatherRequestId = 0;
+
+async function detectWeather(){
   if(manualClimateOn) return;
   const city = document.getElementById('destination').value.trim();
   const statusEl = document.getElementById('weather-status');
   if(!city){
-    statusEl.textContent = 'Впиши город — погоду и даты я определю сама, выбирать ничего не нужно.';
+    statusEl.textContent = 'Впиши город — погоду там я узнаю сама, выбирать климат не нужно.';
     return;
   }
 
-  // "уже знаю" даты поездки — считаем от сегодняшнего дня
+  const requestId = ++weatherRequestId;
+  statusEl.textContent = `Смотрю погоду в городе «${city}»…`;
+
   const today = new Date();
   const start = new Date(today); start.setDate(today.getDate()+2);
-  const days = 4;
+  const days = Math.max(1, Math.min(14, parseInt(document.getElementById('days').value) || 3));
   const end = new Date(start); end.setDate(start.getDate()+days-1);
-  document.getElementById('days').value = days;
   const dateRange = formatDateRange(start, end);
 
-  // Санкт-Петербург по умолчанию — конкретно +17 и дождь, для остальных городов — детерминированный сценарий
-  const weather = /санкт.?петербург|спб/i.test(city)
-    ? MOCK_WEATHER[0]
-    : MOCK_WEATHER[hashCity(city) % MOCK_WEATHER.length];
+  try{
+    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=ru&format=json`);
+    const geoData = await geoRes.json();
+    if(requestId !== weatherRequestId) return; // ввели другой город, пока шёл этот запрос
+    const place = geoData.results && geoData.results[0];
+    if(!place){
+      statusEl.textContent = `Не нашла город «${city}» — проверь написание или укажи климат вручную.`;
+      return;
+    }
 
-  detectedClimate = classifyClimate(weather.temp);
-  detectedRainy = weather.rainy;
-  const climateLabel = {cold:'холодно', mild:'умеренно', hot:'жарко'}[detectedClimate];
+    const forecastDays = Math.min(16, Math.max(3, 2 + days));
+    const fRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=${forecastDays}&timezone=auto`);
+    const fData = await fRes.json();
+    if(requestId !== weatherRequestId) return;
+    const daily = fData.daily;
+    if(!daily || !daily.time || !daily.time.length){
+      statusEl.textContent = `Не получилось узнать погоду в «${city}» — можно указать климат вручную.`;
+      return;
+    }
 
-  statusEl.textContent = `Едешь ${dateRange} в ${city}: ${weather.temp}°C, ${weather.cond} (${climateLabel}).`;
+    const startIdx = Math.min(2, daily.time.length-1);
+    const endIdx = Math.min(startIdx + days - 1, daily.time.length-1);
+    const maxTemps = daily.temperature_2m_max.slice(startIdx, endIdx+1);
+    const codes = daily.weather_code.slice(startIdx, endIdx+1);
+    const avgMax = Math.round(maxTemps.reduce((s,t)=>s+t,0) / maxTemps.length);
+    const rainy = codes.some(c => RAIN_CODES.includes(c) || SNOW_CODES.includes(c));
+    const condText = weatherCodeText(codes[0]);
+
+    detectedClimate = classifyClimate(avgMax);
+    detectedRainy = rainy;
+    const climateLabel = {cold:'холодно', mild:'умеренно', hot:'жарко'}[detectedClimate];
+    const placeLabel = place.country ? `${place.name} (${place.country})` : place.name;
+
+    statusEl.textContent = `Едешь ${dateRange} в ${placeLabel}: ≈${avgMax}°C, ${condText} (${climateLabel}).`;
+  } catch(e){
+    if(requestId !== weatherRequestId) return;
+    statusEl.textContent = `Не получилось узнать погоду в «${city}» — можно указать климат вручную.`;
+  }
 }
 
 function toggleManualClimate(ev){
@@ -533,26 +571,21 @@ const ITEM_LINKS = {
   'Повербанк': [{...KUPER, url:'https://kuper.ru/categories/elektronika'}, SAMOKAT],
   'Зарядка от телефона': [SAMOKAT],
   'Наушники': [SAMOKAT],
-  'Дождевик или зонт': [{...KUPER, url:'https://kuper.ru/categories/tovary-dlya-doma'}],
-  'Дождевик': [{...KUPER, url:'https://kuper.ru/categories/tovary-dlya-doma'}],
-  'Крем SPF': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}],
-  'Крем SPF 50+ — на высоте UV значительно сильнее': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}],
+  'Крем SPF': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
+  'Крем SPF 50+ — на высоте UV значительно сильнее': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
   'Скачать фильмы офлайн — на случай долгой дороги без интернета': [{label:'Okko', url:'https://okko.tv/'}],
   'Собрать плейлист для поездки': [{label:'Звук', url:'https://zvuk.com/'}],
-  'Гермомешок (dry bag) для телефона и денег на пляже': [{...KUPER, url:'https://kuper.ru/categories/sport-i-otdyh'}],
-  'Солнцезащитный крем reef-safe, высокий SPF': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}],
-  'Воск для доски — под температуру воды в месте назначения': [{...KUPER, url:'https://kuper.ru/categories/sport-i-otdyh'}],
-  'Детский солнцезащитный крем (минеральный)': [{...KUPER, url:'https://kuper.ru/categories/detskie-tovary'}, SAMOKAT],
-  'Подгузники — с запасом на все дни поездки + 20%': [{...KUPER, url:'https://kuper.ru/categories/detskie-tovary'}, SAMOKAT],
-  'Влажные салфетки — с большим запасом': [{...KUPER, url:'https://kuper.ru/categories/detskie-tovary'}, SAMOKAT]
+  'Солнцезащитный крем reef-safe, высокий SPF': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
+  'Детский солнцезащитный крем (минеральный)': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT],
+  'Подгузники — с запасом на все дни поездки + 20%': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT],
+  'Влажные салфетки — с большим запасом': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT]
 };
 const CAT_LINKS = {
   'Аптечка': [{...KUPER, url:'https://kuper.ru/categories/lekarstva'}, SAMOKAT],
   'Электроника': [{...KUPER, url:'https://kuper.ru/categories/elektronika'}, SAMOKAT],
-  'Гигиена': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}, SAMOKAT],
-  'Пляж': [{...KUPER, url:'https://kuper.ru/categories/krasota-i-gigiena'}],
-  'Серф-снаряжение': [{...KUPER, url:'https://kuper.ru/categories/sport-i-otdyh'}, SAMOKAT],
-  'Ребёнок': [{...KUPER, url:'https://kuper.ru/categories/detskie-tovary'}, SAMOKAT]
+  'Гигиена': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}, SAMOKAT],
+  'Пляж': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
+  'Ребёнок': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT]
 };
 
 // примерный вес типового снаряжения (граммы) — только для похода/байкпакинга, где вес имеет значение.
@@ -869,7 +902,7 @@ function reset(){
 }
 
 function giveFeedback(){
-  const subject = encodeURIComponent('Отклик на Агента по сбору чемодана');
+  const subject = encodeURIComponent('Отклик на приложение Mala');
   const body = encodeURIComponent('Что понравилось / что нет:\n\n');
   window.location.href = `mailto:i9672380087@gmail.com?subject=${subject}&body=${body}`;
 }
