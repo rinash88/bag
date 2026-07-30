@@ -216,6 +216,7 @@
     </div>
 
     <button class="btn btn-secondary" onclick="copyList()">Скопировать список</button>
+    <button class="btn btn-secondary" onclick="shareLink()">Скинуть ссылкой</button>
     <button class="btn btn-ghost" onclick="reset()">Другая поездка</button>
   </div>
 
@@ -884,6 +885,56 @@ function updateProgress(){
   if(weightEl) weightEl.textContent = totalWeight > 0 ? `Вес: ${formatWeight(totalWeight)}` : '';
 }
 
+function encodeState(obj){
+  const json = JSON.stringify(obj);
+  return btoa(unescape(encodeURIComponent(json)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function decodeState(str){
+  try{
+    const b64 = str.replace(/-/g,'+').replace(/_/g,'/');
+    const json = decodeURIComponent(escape(atob(b64)));
+    return JSON.parse(json);
+  }catch(e){ return null; }
+}
+
+function shareLink(){
+  if(!lastChecklist) return;
+  const state = {
+    v: 1,
+    bag: document.querySelector('#bag-chips .chip.active')?.dataset.v || '',
+    list: lastChecklist
+  };
+  const encoded = encodeState(state);
+  const url = `${location.origin}${location.pathname}#s=${encoded}`;
+  ymGoal('share_link');
+  if(navigator.share){
+    navigator.share({ title: 'Список вещей для поездки', url });
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(url);
+    alert('Ссылка скопирована — можно скидывать.');
+  } else {
+    prompt('Скопируй ссылку:', url);
+  }
+}
+
+function loadFromHash(){
+  const m = location.hash.match(/^#s=(.+)$/);
+  if(!m) return false;
+  const state = decodeState(m[1]);
+  if(!state || !state.list) return false;
+  lastChecklist = state.list;
+  checklistInteracted = false;
+  renderChecklist();
+  if(state.bag) setBag(state.bag);
+  renderFavorites();
+  updateProgress();
+  document.getElementById('form-card').style.display='none';
+  document.getElementById('result').style.display='block';
+  return true;
+}
+
 function copyList(){
   if(!lastChecklist) return;
   let text = lastChecklist.filter(cat => cat.items.length).map(cat => `${cat.title}:\n` + cat.items.map(i => '- '+i.text).join('\n')).join('\n\n');
@@ -907,7 +958,7 @@ function giveFeedback(){
   window.location.href = `mailto:i9672380087@gmail.com?subject=${subject}&body=${body}`;
 }
 
-detectWeather();
+if(!loadFromHash()){ detectWeather(); }
 </script>
 </body>
 </html>
