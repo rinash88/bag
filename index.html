@@ -914,7 +914,9 @@ function unpackChecklist(packed){
   }));
 }
 
-function shareLink(){
+const SHORTENER_URL = 'https://mala.i9672380087.workers.dev';
+
+async function shareLink(){
   if(!lastChecklist) return;
   const state = {
     v: 1,
@@ -922,16 +924,32 @@ function shareLink(){
     list: packChecklist(lastChecklist)
   };
   const encoded = encodeState(state);
-  const url = `${location.origin}${location.pathname}#s=${encoded}`;
+  const longUrl = `${location.origin}${location.pathname}#s=${encoded}`;
   const text = 'Мой список вещей для поездки — глянь:';
   ymGoal('share_link');
+
+  let shortUrl = longUrl;
+  try{
+    const resp = await fetch(`${SHORTENER_URL}/api/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: longUrl })
+    });
+    if(resp.ok){
+      const data = await resp.json();
+      if(data.id) shortUrl = `${SHORTENER_URL}/${data.id}`;
+    }
+  }catch(e){
+    // сеть/воркер недоступны — просто используем длинную ссылку как есть
+  }
+
   if(navigator.share){
-    navigator.share({ title: 'Список вещей для поездки', text, url });
+    navigator.share({ title: 'Список вещей для поездки', text, url: shortUrl });
   } else if(navigator.clipboard){
-    navigator.clipboard.writeText(`${text}\n${url}`);
+    navigator.clipboard.writeText(`${text}\n${shortUrl}`);
     alert('Ссылка скопирована — можно скидывать.');
   } else {
-    prompt('Скопируй ссылку:', url);
+    prompt('Скопируй ссылку:', shortUrl);
   }
 }
 
