@@ -104,6 +104,7 @@
   footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;}
 </style>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 <body>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
@@ -887,16 +888,30 @@ function updateProgress(){
 
 function encodeState(obj){
   const json = JSON.stringify(obj);
-  return btoa(unescape(encodeURIComponent(json)))
-    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return LZString.compressToEncodedURIComponent(json);
 }
 
 function decodeState(str){
   try{
-    const b64 = str.replace(/-/g,'+').replace(/_/g,'/');
-    const json = decodeURIComponent(escape(atob(b64)));
+    const json = LZString.decompressFromEncodedURIComponent(str);
+    if(!json) return null;
     return JSON.parse(json);
   }catch(e){ return null; }
+}
+
+function packChecklist(list){
+  return list.map(cat => [cat.title, cat.items.map(it =>
+    (!it.done && !it.weight) ? it.text : [it.text, it.done?1:0, it.weight||0]
+  )]);
+}
+
+function unpackChecklist(packed){
+  return packed.map(([title, items]) => ({
+    title,
+    items: items.map(it => Array.isArray(it)
+      ? {text: it[0], done: it[1]===1, weight: it[2]||0}
+      : {text: it, done:false, weight:0})
+  }));
 }
 
 function shareLink(){
@@ -904,15 +919,16 @@ function shareLink(){
   const state = {
     v: 1,
     bag: document.querySelector('#bag-chips .chip.active')?.dataset.v || '',
-    list: lastChecklist
+    list: packChecklist(lastChecklist)
   };
   const encoded = encodeState(state);
   const url = `${location.origin}${location.pathname}#s=${encoded}`;
+  const text = 'Мой список вещей для поездки — глянь:';
   ymGoal('share_link');
   if(navigator.share){
-    navigator.share({ title: 'Список вещей для поездки', url });
+    navigator.share({ title: 'Список вещей для поездки', text, url });
   } else if(navigator.clipboard){
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(`${text}\n${url}`);
     alert('Ссылка скопирована — можно скидывать.');
   } else {
     prompt('Скопируй ссылку:', url);
@@ -924,7 +940,7 @@ function loadFromHash(){
   if(!m) return false;
   const state = decodeState(m[1]);
   if(!state || !state.list) return false;
-  lastChecklist = state.list;
+  lastChecklist = unpackChecklist(state.list);
   checklistInteracted = false;
   renderChecklist();
   if(state.bag) setBag(state.bag);
