@@ -7,6 +7,11 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0f1216">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mala">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Mala — сборы в поездку">
 <meta property="og:description" content="Персональный чек-лист вещей под погоду, тип поездки и багаж.">
@@ -482,12 +487,22 @@ function buildChecklist(){
   if(trip === 'surf') electronics.push('Гермомешок (dry bag) для телефона и денег на пляже');
   addCat(list, 'Электроника', electronics);
 
-  // Аптечка
-  const meds = ['Обезболивающее', 'Пластырь', 'Личные лекарства'];
-  if(activities.includes('trekking') || trip === 'hike') meds.push('Репеллент от насекомых', 'Средство от солнца');
-  if(trip === 'bikepacking') meds.push('Таблетки от горной болезни (если маршрут выше 3000м)', 'Средство от расстройства желудка', 'Стерильные бинты и антисептик — до жилья может быть далеко', 'Крем SPF 50+ — на высоте UV значительно сильнее');
-  if(trip === 'surf') meds.push('Солнцезащитный крем reef-safe, высокий SPF', 'Бальзам после солнца / алоэ вера', 'Мазь для мышц после сессий', 'Беруши — от «уха сёрфера» в холодной воде');
-  addCat(list, 'Аптечка', meds);
+  // Аптечка — одной строкой, с суммарным весом (без мелких 15-20г позиций по отдельности)
+  const medsGroups = [];
+  medsGroups.push({ label: 'обезболивающее, пластырь, личные лекарства', keys: ['Обезболивающее', 'Пластырь', 'Личные лекарства'] });
+  if(activities.includes('trekking') || trip === 'hike'){
+    medsGroups.push({ label: 'репеллент, крем от солнца', keys: ['Репеллент от насекомых', 'Средство от солнца'] });
+  }
+  if(trip === 'bikepacking'){
+    medsGroups.push({ label: 'таблетки от горной болезни, средство от расстройства желудка, бинты и антисептик, крем SPF 50+', keys: ['Таблетки от горной болезни (если маршрут выше 3000м)', 'Средство от расстройства желудка', 'Стерильные бинты и антисептик — до жилья может быть далеко', 'Крем SPF 50+ — на высоте UV значительно сильнее'] });
+  }
+  if(trip === 'surf'){
+    medsGroups.push({ label: 'reef-safe крем, бальзам после солнца, мазь для мышц, беруши', keys: ['Солнцезащитный крем reef-safe, высокий SPF', 'Бальзам после солнца / алоэ вера', 'Мазь для мышц после сессий', 'Беруши — от «уха сёрфера» в холодной воде'] });
+  }
+  const medsWeight = medsGroups.reduce((sum, g) => sum + g.keys.reduce((s,k) => s + (ITEM_WEIGHTS[k]||0), 0), 0);
+  const medsText = `Аптечка (${medsGroups.map(g => g.label).join(', ')})`;
+  ITEM_WEIGHTS[medsText] = medsWeight;
+  addCat(list, 'Аптечка', [medsText]);
 
   // Ребёнок — если включён тумблер, отдельная категория под возраст
   if(withKid){
@@ -776,7 +791,7 @@ function renderChecklist(){
         const id = `chk-${ci}-${ii}`;
         const itemLinks = ITEM_LINKS[item.text];
         const linkHtml = itemLinks ? itemLinks.map(l => `<a class="item-link" href="${l.url}" target="_blank" rel="noopener" onclick="ymGoal('affiliate_click',{service:'${l.label}',place:'item'})">${l.label} →</a>`).join('') : '';
-        const weightHtml = item.weight > 0 ? `<span class="item-weight">${formatWeight(item.weight)}</span>` : '';
+        const weightHtml = item.weight > 0 ? `<span class="item-weight" onclick="startEditWeight(${ci},${ii})" title="Нажми, чтобы изменить вес">${formatWeight(item.weight)}</span>` : '';
         return `<div class="item-row${item.done ? ' checked' : ''}" id="row-${id}">
           <input type="checkbox" id="${id}" ${item.done ? 'checked' : ''} onchange="toggleItem(${ci},${ii},'${id}')">
           <span class="item-main" id="main-${id}">
@@ -832,6 +847,34 @@ function toggleItem(ci, ii, id){
     ymGoal('item_checked');
   }
   updateProgress();
+}
+
+function startEditWeight(ci, ii){
+  const id = `chk-${ci}-${ii}`;
+  const item = lastChecklist[ci].items[ii];
+  const mainEl = document.getElementById(`main-${id}`);
+  if(!mainEl) return;
+  const weightSpan = mainEl.querySelector('.item-weight');
+  if(!weightSpan) return;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '5';
+  input.className = 'item-edit-weight';
+  input.value = item.weight || 0;
+  weightSpan.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const val = parseInt(input.value, 10);
+    lastChecklist[ci].items[ii].weight = (isNaN(val) || val < 0) ? 0 : val;
+    renderChecklist();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (ev) => {
+    if(ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+    else if(ev.key === 'Escape'){ ev.preventDefault(); renderChecklist(); }
+  });
 }
 
 function startEditItem(ci, ii){
