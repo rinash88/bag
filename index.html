@@ -348,12 +348,70 @@ function onDestinationInput(){
   citySuggestTimer = setTimeout(() => fetchSuggestions(val), 300);
 }
 
+const CYR2LAT = {а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'};
+
+function transliterate(str){
+  return str.toLowerCase().split('').map(ch => CYR2LAT[ch] !== undefined ? CYR2LAT[ch] : ch).join('');
+}
+
+async function geocodeCity(query, count){
+  // Photon (Komoot) — геокодер на данных OpenStreetMap, специально сделан под живой
+  // автокомплит и обычно даёт более полные многоязычные названия, чем гео-сервис Open-Meteo
+  try{
+    const data = await fetchJsonWithRetry(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=ru&limit=${count}`, 2);
+    const feats = data.features || [];
+    if(feats.length){
+      return feats
+        .filter(f => f.properties && f.properties.name && f.geometry && f.geometry.coordinates)
+        .map(f => ({
+          id: f.properties.osm_id ? `${f.properties.osm_type || ''}${f.properties.osm_id}` : `${f.geometry.coordinates[1]},${f.geometry.coordinates[0]}`,
+          name: f.properties.name,
+          admin1: f.properties.state || f.properties.county || '',
+          country: f.properties.country || '',
+          latitude: f.geometry.coordinates[1],
+          longitude: f.geometry.coordinates[0],
+          population: f.properties.population || 0
+        }));
+    }
+  }catch(e){
+    // Photon недоступен — переходим к резервному варианту ниже
+  }
+  return geocodeCityFallback(query, count);
+}
+
+async function geocodeCityFallback(query, count){
+  // резерв: гео-сервис Open-Meteo + транслитерация — многие места в его базе не имеют
+  // русского названия, поэтому при вводе кириллицей параллельно ищем и по транслитерации
+  // (напр. «бали» → «bali»), иначе нужный город просто не найдётся
+  const translit = transliterate(query);
+  const queries = [query];
+  if(translit && translit !== query.toLowerCase()) queries.push(translit);
+
+  const results = await Promise.all(queries.map(q =>
+    fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=${count}&language=ru&format=json`, 1)
+      .then(d => d.results || [])
+      .catch(() => [])
+  ));
+
+  const seen = new Set();
+  const merged = [];
+  for(const list of results){
+    for(const place of list){
+      const key = place.id || `${place.latitude},${place.longitude}`;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      merged.push(place);
+    }
+  }
+  return merged;
+}
+
 async function fetchSuggestions(val){
   lastSuggestQuery = val;
   try{
-    const data = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=20&language=ru&format=json`, 1);
+    const results = await geocodeCity(val, 15);
     if(document.getElementById('destination').value.trim() !== val) return; // устарело, ввели что-то другое
-    renderSuggestions(data.results || []);
+    renderSuggestions(results);
   }catch(e){
     hideSuggestions();
   }
@@ -424,9 +482,8 @@ async function detectWeather(){
   statusEl.textContent = `Смотрю погоду в городе «${city}»…`;
 
   try{
-    const geoData = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=20&language=ru&format=json`);
+    const candidates = await geocodeCity(city, 20);
     if(requestId !== weatherRequestId) return; // ввели другой город, пока шёл этот запрос
-    const candidates = geoData.results || [];
     // сперва ищем точное совпадение по названию (иначе поиск по префиксу может подсунуть
     // более крупный город с похожим началом названия — «Баликпапан» вместо «Бали»);
     // и только среди точных совпадений (или, если их нет, среди всех) берём самое населённое
