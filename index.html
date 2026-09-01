@@ -336,9 +336,14 @@ async function detectWeather(){
   const dateRange = formatDateRange(start, end);
 
   try{
-    const geoData = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=ru&format=json`);
+    const geoData = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=8&language=ru&format=json`);
     if(requestId !== weatherRequestId) return; // ввели другой город, пока шёл этот запрос
-    const place = geoData.results && geoData.results[0];
+    const candidates = geoData.results || [];
+    // среди нескольких совпадений по имени берём самое населённое — иначе можно попасть
+    // на одноимённую деревню вместо известного города/острова (напр. «Бали» в Индии вместо Индонезии)
+    const place = candidates.length
+      ? candidates.reduce((best, c) => (c.population || 0) > (best.population || 0) ? c : best, candidates[0])
+      : null;
     if(!place){
       statusEl.textContent = `Не нашла город «${city}» — собрала список без учёта погоды. Проверь написание или укажи климат вручную.`;
       return;
