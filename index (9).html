@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mala</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0f1216">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mala">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Mala — сборы в поездку">
+<meta property="og:description" content="Персональный чек-лист вещей под погоду, тип поездки и багаж.">
+<meta property="og:image" content="https://rinash88.github.io/bag/og-image.png">
+<meta property="og:url" content="https://rinash88.github.io/bag/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mala — сборы в поездку">
+<meta name="twitter:description" content="Персональный чек-лист вещей под погоду, тип поездки и багаж.">
+<meta name="twitter:image" content="https://rinash88.github.io/bag/og-image.png">
+<style>
+  :root{
+    --bg:#0f1216; --card:#171b21; --card2:#1e232b;
+    --accent:#ff7a45; --accent2:#4ade80; --accent3:#60a5fa;
+    --text:#f3f4f6; --muted:#9aa3af; --border:#2a2f38;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0f1216 0%,#12161c 100%);color:var(--text);line-height:1.5;}
+  .wrap{max-width:520px;margin:0 auto;padding:24px 18px 60px;}
+  header{text-align:center;margin-bottom:24px;}
+  .badge{display:inline-block;background:rgba(96,165,250,.15);color:var(--accent3);font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;margin-bottom:14px;}
+  h1{font-size:27px;margin:0 0 10px;font-weight:800;letter-spacing:-.02em;}
+  .sub{color:var(--muted);font-size:15px;max-width:430px;margin:0 auto;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:16px;}
+  .card h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 14px;font-weight:700;}
+
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;}
+  label:first-child{margin-top:0;}
+  input[type=number], input[type=text]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:16px;outline:none;}
+  input:focus{border-color:var(--accent3);}
+  .input-wrap{position:relative;}
+  .input-wrap input[type=text]{padding-right:66px;}
+  .input-wrap .pencil{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);opacity:.8;pointer-events:none;}
+  .input-clear{position:absolute;right:36px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:var(--card2);color:var(--muted);display:none;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);}
+  .input-clear:hover{color:var(--text);background:var(--border);}
+  .city-suggestions{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--card2);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:20;display:none;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  .city-suggestion-item{padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;cursor:pointer;}
+  .city-suggestion-item:hover{background:rgba(96,165,250,.12);}
+  .city-suggestion-item .cs-name{font-size:14px;color:var(--text);font-weight:600;}
+  .city-suggestion-item .cs-region{font-size:12px;color:var(--muted);white-space:nowrap;}
+
+  .chips{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+  .chip{padding:9px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:13px;cursor:pointer;user-select:none;}
+  .chip.active{background:var(--accent3);color:#071019;border-color:var(--accent3);font-weight:700;}
+
+  .trip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+  .trip-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 4px;border-radius:14px;text-align:center;}
+  .trip-tile .icon{color:var(--muted);line-height:0;}
+  .trip-tile .icon svg{width:22px;height:22px;}
+  .trip-tile .label{font-size:11.5px;font-weight:600;line-height:1.25;color:var(--muted);}
+  .trip-tile.active .icon{color:#071019;}
+  .trip-tile.active .label{color:#071019;}
+
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
+  .toggle-row span{font-size:14px;}
+  .switch{width:44px;height:26px;background:var(--card2);border:1px solid var(--border);border-radius:20px;position:relative;cursor:pointer;flex-shrink:0;}
+  .switch .knob{width:20px;height:20px;background:var(--muted);border-radius:50%;position:absolute;top:2px;left:2px;transition:all .15s;}
+  .switch.on{background:rgba(96,165,250,.3);border-color:var(--accent3);}
+  .switch.on .knob{left:20px;background:var(--accent3);}
+
+  .btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:transform .1s;}
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--accent3);color:#071019;}
+  .btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+  .btn-ghost{background:transparent;color:var(--accent3);border:1px dashed var(--border);}
+
+  #result{display:none;}
+  .cat-block{margin-bottom:14px;}
+  .cat-title{font-size:13px;font-weight:800;color:var(--accent3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);transition:opacity .16s ease, transform .16s ease;}
+  .item-row:last-child{border-bottom:none;}
+  .item-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent3);flex-shrink:0;}
+  .item-row label{margin:0;font-size:14.5px;color:var(--text);cursor:pointer;}
+  .item-row.checked label{color:var(--muted);text-decoration:line-through;}
+  .item-row.removing{opacity:0;transform:translateX(6px);}
+  .item-main{flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;}
+  .item-link{font-size:12.5px;color:var(--accent3);text-decoration:none;font-weight:700;white-space:nowrap;flex-shrink:0;}
+  .item-link:active{opacity:.7;}
+  .item-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+  .item-action{cursor:pointer;color:var(--muted);padding:5px 6px;border-radius:6px;display:inline-flex;align-items:center;}
+  .item-action:hover{color:var(--accent3);background:rgba(96,165,250,.1);}
+  .item-action.delete:hover{color:var(--accent);background:rgba(255,122,69,.1);}
+  .item-edit-input{width:100%;background:var(--card2);border:1px solid var(--accent3);border-radius:8px;padding:6px 8px;color:var(--text);font-size:14.5px;outline:none;}
+  .item-edit-weight{width:60px;flex-shrink:0;background:var(--card2);border:1px solid var(--accent3);border-radius:8px;padding:6px 6px;color:var(--text);font-size:13px;outline:none;text-align:right;}
+  .item-weight{font-size:11.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+
+  .progress-wrap{margin:2px 0 10px;}
+  .progress-bar-track{width:100%;height:10px;background:var(--card2);border-radius:20px;overflow:hidden;border:1px solid var(--border);}
+  .progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg, var(--accent3), var(--accent2));border-radius:20px;transition:width .35s ease;}
+  .progress-meta{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted);margin-top:7px;}
+  .progress-meta span:last-child{color:var(--accent2);font-weight:700;}
+
+  .weight-breakdown{margin:2px 0 16px;}
+  .weight-bar{display:flex;width:100%;height:14px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--card2);}
+  .weight-bar span{height:100%;transition:width .3s ease;}
+  .weight-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:11.5px;color:var(--muted);}
+  .weight-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;}
+  .cat-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+  .cat-title-row .cat-title{margin-bottom:0;}
+  .cat-links a{font-size:12px;color:var(--accent3);text-decoration:none;font-weight:700;margin-left:10px;white-space:nowrap;}
+  .progress-line{font-size:12px;color:var(--muted);margin-bottom:14px;}
+
+  .fav-remove{cursor:pointer;color:var(--muted);padding:4px 6px;flex-shrink:0;border-radius:6px;display:inline-flex;align-items:center;}
+  .fav-remove:hover{color:var(--accent);background:rgba(255,122,69,.1);}
+  .add-row{display:flex;gap:8px;margin-top:10px;}
+  .add-row input{flex:1;}
+  .add-row button{width:auto;margin-top:0;padding:12px 16px;white-space:nowrap;}
+  .fav-empty{font-size:13px;color:var(--muted);margin:0 0 10px;}
+  .fav-hint{font-size:11.5px;color:var(--muted);margin-top:8px;}
+  .weather-status{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.4;}
+  .weather-onboard{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:8px;}
+  .weather-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(96,165,250,.12);color:var(--accent3);padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid rgba(96,165,250,.25);user-select:none;}
+  .weather-chip:hover{background:rgba(96,165,250,.2);}
+  .weather-chip svg{flex-shrink:0;}
+  .weather-detail{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.4;}
+  .item-note{display:block;font-size:11px;color:var(--muted);margin-top:2px;}
+  .fav-confirm{font-size:12px;color:var(--accent2);margin-bottom:8px;line-height:1.4;}
+  .manual-toggle{display:inline-block;font-size:12px;color:var(--accent3);text-decoration:none;margin-top:6px;}
+  .note{font-size:12px;color:var(--muted);margin-top:10px;}
+  .warn{font-size:12.5px;color:var(--accent);background:rgba(255,122,69,.1);border-radius:12px;padding:10px 12px;margin-top:10px;}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;}
+</style>
+</head>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<body>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   m[i].l=1*new Date();
+   for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+   k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+   ym(110908769, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true,
+        webvisor:true
+   });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/110908769" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+<div class="wrap">
+  <header>
+    <span class="badge">Mala</span>
+    <h1>Не забудь то, что забываешь всегда</h1>
+    <p class="sub">Пара вопросов — и список именно под твою поездку, а не шаблон из интернета.</p>
+  </header>
+
+  <div class="card" id="form-card">
+    <h2>Куда едешь</h2>
+    <div class="input-wrap">
+      <input type="text" id="destination" placeholder="Город назначения" value="Санкт-Петербург" autocomplete="off" oninput="onDestinationInput()" onblur="onDestinationBlur()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+      <span class="input-clear" id="destination-clear" onmousedown="event.preventDefault();clearDestination();" title="Очистить">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </span>
+      <svg class="pencil" aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+      </svg>
+      <div class="city-suggestions" id="city-suggestions"></div>
+    </div>
+    <div class="weather-status" id="weather-status">Впиши город — погоду там я узнаю сама, выбирать климат не нужно.</div>
+    <a href="#" class="manual-toggle" id="manual-toggle" onclick="toggleManualClimate(event)">Погода не та? Указать климат вручную</a>
+
+    <h2 style="margin-top:18px;">Тип поездки</h2>
+    <div class="trip-grid" id="trip-chips">
+      <div class="chip trip-tile active" data-v="weekend"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8V6a4 4 0 0 1 8 0v2"/><rect x="5" y="8" width="14" height="13" rx="3"/><rect x="9" y="13" width="6" height="5" rx="1"/></svg></span><span class="label">Короткая поездка</span></div>
+      <div class="chip trip-tile" data-v="hike"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 9 8l4 6 3-5 5 11H3Z"/></svg></span><span class="label">Пеший поход</span></div>
+      <div class="chip trip-tile" data-v="bikepacking"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17 10 8h4l4 9M10 8l4 9"/></svg></span><span class="label">Байкпакинг</span></div>
+      <div class="chip trip-tile" data-v="business"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="3" y1="13" x2="21" y2="13"/></svg></span><span class="label">Командировка</span></div>
+      <div class="chip trip-tile" data-v="city"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="6" height="11"/><rect x="13" y="4" width="7" height="17"/><line x1="15.5" y1="8" x2="15.5" y2="8"/><line x1="18" y1="8" x2="18" y2="8"/></svg></span><span class="label">Городской трип</span></div>
+      <div class="chip trip-tile" data-v="surf"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 15c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><path d="M2 19c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/></svg></span><span class="label">Сёрф-трип</span></div>
+    </div>
+
+    <label>Сколько дней</label>
+    <input type="number" id="days" min="1" max="30" step="1" value="3">
+
+    <div class="chips" id="climate-chips" style="display:none;">
+      <div class="chip" data-v="cold">Холодно</div>
+      <div class="chip active" data-v="mild">Умеренно</div>
+      <div class="chip" data-v="hot">Жара</div>
+    </div>
+
+    <label>Что ещё будет в поездке</label>
+    <div class="chips" id="activity-chips">
+      <div class="chip" data-v="beach">Пляж</div>
+      <div class="chip" data-v="trekking">Треккинг</div>
+      <div class="chip" data-v="party">Вечеринки</div>
+      <div class="chip" data-v="sport">Тренировки</div>
+      <div class="chip" data-v="meetings">Деловые встречи</div>
+    </div>
+
+    <div class="toggle-row">
+      <span>Еду с ребёнком</span>
+      <div class="switch" id="kid-switch" onclick="toggleKid()"><div class="knob"></div></div>
+    </div>
+    <div class="chips" id="kid-age-chips" style="display:none;margin-top:10px;">
+      <div class="chip" data-v="baby">0–1 год</div>
+      <div class="chip active" data-v="toddler">1–3 года</div>
+      <div class="chip" data-v="kid">3–7 лет</div>
+      <div class="chip" data-v="older">7+ лет</div>
+    </div>
+
+    <div class="toggle-row">
+      <span>Только ручная кладь</span>
+      <div class="switch" id="carryon-switch" onclick="toggleCarryon()"><div class="knob"></div></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="buildList()">Собрать список</button>
+  </div>
+
+  <div class="card" id="result">
+    <h2>Твой список</h2>
+    <div class="progress-wrap">
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-bar-fill"></div></div>
+      <div class="progress-meta">
+        <span id="progress-count">0 из 0 собрано</span>
+        <span id="progress-weight"></span>
+      </div>
+    </div>
+    <div class="progress-line" id="progress-line"></div>
+    <div class="weight-breakdown" id="weight-breakdown" style="display:none;">
+      <div class="weight-bar" id="weight-bar"></div>
+      <div class="weight-legend" id="weight-legend"></div>
+      <div class="fav-hint">Вес ориентировочный, по типовому снаряжению — взвешивать ничего не нужно.</div>
+    </div>
+    <div id="checklist"></div>
+    <div class="cat-block" id="favorites-block"></div>
+    <div class="warn" id="carryon-warn" style="display:none;">Ручная кладь: жидкости до 100 мл в бутылке, лекарства и документы — в первую очередь туда. Вес и точные лимиты уточни у своей авиакомпании.</div>
+
+    <div class="cat-block" id="bag-block" style="margin-top:6px;">
+      <div class="cat-title-row"><div class="cat-title">Во что паковать</div></div>
+      <div class="chips" id="bag-chips">
+        <div class="chip" data-v="backpack">Рюкзак (ручная кладь)</div>
+        <div class="chip" data-v="cabin">Чемодан кэбин-сайз</div>
+      </div>
+      <div class="weather-status" id="bag-note"></div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="copyList()">Скопировать список</button>
+    <button class="btn btn-secondary" onclick="shareLink()">Скинуть ссылкой</button>
+    <button class="btn btn-ghost" onclick="reset()">Другая поездка</button>
+  </div>
+
+  <div class="card">
+    <h2>Что думаешь?</h2>
+    <p class="note" style="margin-top:0;">Зашло / не зашло / чего не хватает в списке — скажи как есть.</p>
+    <button class="btn btn-secondary" onclick="giveFeedback()">Оставить отклик</button>
+  </div>
+
+  <footer>Mala · сборы в поездку</footer>
+</div>
+
+<script>
+let carryon = false;
+let lastChecklist = null;
+let detectedClimate = 'mild';
+let detectedRainy = false;
+let manualClimateOn = false;
+
+const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+// Реальная погода из Open-Meteo (бесплатно, без API-ключа, работает для любого города мира)
+const RAIN_CODES = [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99];
+const SNOW_CODES = [71,73,75,77,85,86];
+
+function classifyClimate(temp){
+  if(temp < 10) return 'cold';
+  if(temp < 24) return 'mild';
+  return 'hot';
+}
+
+function weatherCodeText(code){
+  if(code === 0) return 'ясно';
+  if(code === 1) return 'преимущественно ясно';
+  if(code === 2) return 'переменная облачность';
+  if(code === 3) return 'пасмурно';
+  if(code === 45 || code === 48) return 'туман';
+  if([51,53,55].includes(code)) return 'морось';
+  if([56,57].includes(code)) return 'ледяная морось';
+  if([61,63,65].includes(code)) return 'дождь';
+  if([66,67].includes(code)) return 'ледяной дождь';
+  if([71,73,75].includes(code)) return 'снег';
+  if(code === 77) return 'снежная крупа';
+  if([80,81,82].includes(code)) return 'ливень';
+  if([85,86].includes(code)) return 'снегопад';
+  if(code === 95) return 'гроза';
+  if([96,99].includes(code)) return 'гроза с градом';
+  return 'переменчивая погода';
+}
+
+function formatDateRange(start, end){
+  const sameMonth = start.getMonth() === end.getMonth();
+  const monthName = MONTHS_GEN[end.getMonth()];
+  return sameMonth
+    ? `${start.getDate()}–${end.getDate()} ${monthName}`
+    : `${start.getDate()} ${MONTHS_GEN[start.getMonth()]} – ${end.getDate()} ${monthName}`;
+}
+
+let weatherRequestId = 0;
+let selectedPlace = null;
+let citySuggestTimer = null;
+let lastSuggestQuery = '';
+
+async function fetchJsonWithRetry(url, attempts = 3){
+  let lastErr;
+  for(let i = 0; i < attempts; i++){
+    try{
+      const res = await fetch(url);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    }catch(e){
+      lastErr = e;
+      if(i < attempts - 1) await new Promise(r => setTimeout(r, 500 * (i+1)));
+    }
+  }
+  throw lastErr;
+}
+
+function placeLabel(place, short){
+  const region = place.admin1 && place.admin1 !== place.name ? `, ${place.admin1}` : '';
+  const country = place.country ? ` (${place.country})` : '';
+  return short ? `${place.name}${region}` : `${place.name}${region}${country}`;
+}
+
+// ---- Автокомплит города ----
+
+function onDestinationInput(){
+  selectedPlace = null;
+  const val = document.getElementById('destination').value.trim();
+  document.getElementById('destination-clear').style.display = val ? 'flex' : 'none';
+  clearTimeout(citySuggestTimer);
+  if(val.length < 2){ hideSuggestions(); return; }
+  citySuggestTimer = setTimeout(() => fetchSuggestions(val), 300);
+}
+
+async function fetchSuggestions(val){
+  lastSuggestQuery = val;
+  try{
+    const data = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=20&language=ru&format=json`, 1);
+    if(document.getElementById('destination').value.trim() !== val) return; // устарело, ввели что-то другое
+    renderSuggestions(data.results || []);
+  }catch(e){
+    hideSuggestions();
+  }
+}
+
+function renderSuggestions(results){
+  const box = document.getElementById('city-suggestions');
+  if(!results.length){ hideSuggestions(); return; }
+  const sorted = [...results].sort((a, b) => (b.population || 0) - (a.population || 0)).slice(0, 8);
+  window._citySuggestions = sorted;
+  box.innerHTML = sorted.map((r, i) => `
+    <div class="city-suggestion-item" onmousedown="event.preventDefault();selectSuggestion(${i})">
+      <span class="cs-name">${escapeHtml(r.name)}</span>
+      <span class="cs-region">${escapeHtml([r.admin1 && r.admin1 !== r.name ? r.admin1 : '', r.country || ''].filter(Boolean).join(', '))}</span>
+    </div>`).join('');
+  box.style.display = 'block';
+}
+
+function hideSuggestions(){
+  const box = document.getElementById('city-suggestions');
+  box.style.display = 'none';
+  box.innerHTML = '';
+}
+
+function selectSuggestion(i){
+  const r = (window._citySuggestions || [])[i];
+  if(!r) return;
+  selectedPlace = r;
+  document.getElementById('destination').value = placeLabel(r, true);
+  document.getElementById('destination-clear').style.display = 'flex';
+  hideSuggestions();
+  runForecastFor(r);
+}
+
+function clearDestination(){
+  const input = document.getElementById('destination');
+  input.value = '';
+  selectedPlace = null;
+  hideSuggestions();
+  document.getElementById('destination-clear').style.display = 'none';
+  document.getElementById('weather-status').textContent = 'Впиши город — погоду там я узнаю сама, выбирать климат не нужно.';
+  detectedClimate = 'mild';
+  detectedRainy = false;
+  input.focus();
+}
+
+function onDestinationBlur(){
+  setTimeout(() => {
+    hideSuggestions();
+    const val = document.getElementById('destination').value.trim();
+    if(selectedPlace && val === placeLabel(selectedPlace, true)) return; // уже точно выбрано из списка
+    detectWeather();
+  }, 150);
+}
+
+// ---- Погода ----
+
+async function detectWeather(){
+  if(manualClimateOn) return;
+  const city = document.getElementById('destination').value.trim();
+  const statusEl = document.getElementById('weather-status');
+  if(!city){
+    statusEl.textContent = 'Впиши город — погоду там я узнаю сама, выбирать климат не нужно.';
+    return;
+  }
+
+  const requestId = ++weatherRequestId;
+  statusEl.textContent = `Смотрю погоду в городе «${city}»…`;
+
+  try{
+    const geoData = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=20&language=ru&format=json`);
+    if(requestId !== weatherRequestId) return; // ввели другой город, пока шёл этот запрос
+    const candidates = geoData.results || [];
+    // сперва ищем точное совпадение по названию (иначе поиск по префиксу может подсунуть
+    // более крупный город с похожим началом названия — «Баликпапан» вместо «Бали»);
+    // и только среди точных совпадений (или, если их нет, среди всех) берём самое населённое
+    const typedNorm = city.trim().toLowerCase();
+    const exactMatches = candidates.filter(c => c.name && c.name.trim().toLowerCase() === typedNorm);
+    const pool = exactMatches.length ? exactMatches : candidates;
+    const place = pool.length
+      ? pool.reduce((best, c) => (c.population || 0) > (best.population || 0) ? c : best, pool[0])
+      : null;
+    if(!place){
+      statusEl.textContent = `Не нашла город «${city}» — собрала список без учёта погоды. Проверь написание, укажи климат вручную или выбери город из списка подсказок.`;
+      return;
+    }
+    await runForecastFor(place, requestId);
+  } catch(e){
+    if(requestId !== weatherRequestId) return;
+    statusEl.innerHTML = `Не получилось узнать погоду в «${city}». <a href="#" class="manual-toggle" onclick="event.preventDefault();detectWeather();">Повторить</a> или укажи климат вручную.`;
+  }
+}
+
+async function runForecastFor(place, existingRequestId){
+  window._lastForecastPlace = place;
+  const statusEl = document.getElementById('weather-status');
+  const requestId = existingRequestId || ++weatherRequestId;
+  if(!existingRequestId) statusEl.textContent = `Смотрю погоду в «${place.name}»…`;
+
+  const today = new Date();
+  const start = new Date(today); start.setDate(today.getDate()+2);
+  const days = Math.max(1, Math.min(14, parseInt(document.getElementById('days').value) || 3));
+  const end = new Date(start); end.setDate(start.getDate()+days-1);
+  const dateRange = formatDateRange(start, end);
+
+  try{
+    const forecastDays = Math.min(16, Math.max(3, 2 + days));
+    const fData = await fetchJsonWithRetry(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=${forecastDays}&timezone=auto`);
+    if(requestId !== weatherRequestId) return;
+    const daily = fData.daily;
+    if(!daily || !daily.time || !daily.time.length){
+      statusEl.innerHTML = `Не получилось узнать погоду в «${place.name}». <a href="#" class="manual-toggle" onclick="event.preventDefault();retryLastForecast();">Повторить</a> или укажи климат вручную.`;
+      return;
+    }
+
+    const startIdx = Math.min(2, daily.time.length-1);
+    const endIdx = Math.min(startIdx + days - 1, daily.time.length-1);
+    const maxTemps = daily.temperature_2m_max.slice(startIdx, endIdx+1);
+    const codes = daily.weather_code.slice(startIdx, endIdx+1);
+    const avgMax = Math.round(maxTemps.reduce((s,t)=>s+t,0) / maxTemps.length);
+    const rainy = codes.some(c => RAIN_CODES.includes(c) || SNOW_CODES.includes(c));
+    const condText = weatherCodeText(codes[0]);
+
+    detectedClimate = classifyClimate(avgMax);
+    detectedRainy = rainy;
+    const label = placeLabel(place);
+    const signedTemp = `${avgMax > 0 ? '+' : ''}${avgMax}°C`;
+
+    const chipHtml = `<span class="weather-chip" onclick="toggleWeatherDetail(this)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        ${label} · ${signedTemp} · список под эту погоду
+      </span>
+      <div class="weather-detail" style="display:none;">Едешь ${dateRange}: ${condText}, в среднем ${signedTemp}.</div>`;
+
+    if(!localStorage.getItem('malaWeatherOnboardSeen')){
+      statusEl.innerHTML = `<div class="weather-onboard">Проверили погоду в поездке — ${label}, ${dateRange}: ${signedTemp}, ${condText.toLowerCase()}. Собрали список под неё. Что-то не так — поправьте вручную, я запомню.</div>${chipHtml}`;
+      localStorage.setItem('malaWeatherOnboardSeen', '1');
+    } else {
+      statusEl.innerHTML = chipHtml;
+    }
+  } catch(e){
+    if(requestId !== weatherRequestId) return;
+    statusEl.innerHTML = `Не получилось узнать погоду в «${place.name}». <a href="#" class="manual-toggle" onclick="event.preventDefault();detectWeather();">Повторить</a> или укажи климат вручную.`;
+  }
+}
+
+function toggleWeatherDetail(chipEl){
+  const detail = chipEl.nextElementSibling;
+  if(detail) detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+}
+
+function retryLastForecast(){
+  if(window._lastForecastPlace) runForecastFor(window._lastForecastPlace);
+  else detectWeather();
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.input-wrap');
+  if(wrap && !wrap.contains(e.target)) hideSuggestions();
+});
+
+function toggleManualClimate(ev){
+  ev.preventDefault();
+  manualClimateOn = !manualClimateOn;
+  document.getElementById('climate-chips').style.display = manualClimateOn ? 'flex' : 'none';
+  document.getElementById('manual-toggle').textContent = manualClimateOn ? 'Вернуть автоопределение погоды' : 'Погода не та? Указать климат вручную';
+}
+
+const BAG_NOTES = {
+  backpack: 'Рюкзак — влезает как ручная кладь, удобно быстро перемещаться, не нужно ждать багаж.',
+  cabin: 'Чемодан кэбин-сайз — больше места и порядка, особенно если едешь на деловые встречи или дольше 4 дней.'
+};
+
+function recommendBag(trip, days, carryon){
+  if(trip === 'hike') return 'backpack';
+  if(trip === 'business') return 'cabin';
+  if(trip === 'surf') return 'cabin';
+  if(carryon) return 'backpack';
+  return days <= 3 ? 'backpack' : 'cabin';
+}
+
+function setBag(choice){
+  const container = document.getElementById('bag-chips');
+  [...container.children].forEach(c => c.classList.toggle('active', c.dataset.v === choice));
+  document.getElementById('bag-note').textContent = BAG_NOTES[choice];
+}
+
+document.getElementById('bag-chips').addEventListener('click', (ev) => {
+  const chip = ev.target.closest('.chip');
+  if(!chip) return;
+  setBag(chip.dataset.v);
+});
+
+function toggleCarryon(){
+  carryon = !carryon;
+  document.getElementById('carryon-switch').classList.toggle('on', carryon);
+}
+
+let withKid = false;
+function toggleKid(){
+  withKid = !withKid;
+  document.getElementById('kid-switch').classList.toggle('on', withKid);
+  document.getElementById('kid-age-chips').style.display = withKid ? 'flex' : 'none';
+}
+
+function setupChips(containerId, multi){
+  const container = document.getElementById(containerId);
+  container.addEventListener('click', (ev) => {
+    const chip = ev.target.closest('.chip');
+    if(!chip) return;
+    if(multi){
+      chip.classList.toggle('active');
+    } else {
+      [...container.children].forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    }
+  });
+}
+setupChips('trip-chips', false);
+setupChips('climate-chips', false);
+setupChips('activity-chips', true);
+setupChips('kid-age-chips', false);
+
+function selectedSingle(containerId){
+  const el = document.getElementById(containerId).querySelector('.chip.active');
+  return el ? el.dataset.v : null;
+}
+function selectedMulti(containerId){
+  return [...document.getElementById(containerId).querySelectorAll('.chip.active')].map(c => c.dataset.v);
+}
+
+function addCat(list, title, items){
+  if(items.length) list.push({title, items});
+}
+
+function buildChecklist(){
+  const trip = selectedSingle('trip-chips') || 'weekend';
+  const climate = manualClimateOn ? (selectedSingle('climate-chips') || 'mild') : detectedClimate;
+  const activities = selectedMulti('activity-chips');
+  const days = Math.max(1, Math.min(30, parseInt(document.getElementById('days').value) || 3));
+
+  const list = [];
+
+  // Документы
+  const docs = ['Паспорт / документы', 'Билеты и брони', 'Страховка'];
+  if(trip === 'business') docs.push('Визитки', 'Документы для командировки');
+  addCat(list, 'Документы', docs);
+
+  // Одежда
+  let clothes = [];
+  if(trip === 'bikepacking'){
+    // байкпакинг: вес и объём критичны, одежду стирают по ходу — количество НЕ растёт от числа дней
+    clothes.push(
+      'Велоджерси / тех.футболки — 2 шт (стираешь по ходу, а не берёшь по числу дней)',
+      'Велошорты с памперсом — 2 пары',
+      'Носки — 2-3 пары (мерино сохнут за ночь)',
+      'Бельё — 2-3 компл.',
+      'Мерино футболка или лонгслив на вечер/сон',
+      'Непромокаемая куртка и штаны — на перевалах может пойти снег даже летом',
+      'Тёплый слой (флис/пуховка) — днём в долине жарко, наверху заморозки',
+      'Непромокаемые перчатки + отдельно лёгкие велоперчатки',
+      'Баф и шапка — от солнца, ветра и холода на высоте',
+      'Сандалии или гортекс-носки — для бродов через реки',
+      'Солнцезащитные очки — высокогорное солнце очень жёсткое'
+    );
+  } else {
+    const shirts = Math.max(2, Math.ceil(days*0.8));
+    const socks = days + 1;
+    const bottoms = Math.max(1, Math.ceil(days/3)+1);
+    clothes.push(`Футболки/рубашки — ${shirts} шт`, `Носки и бельё — ${socks} компл.`, `Штаны/шорты — ${bottoms} шт`, 'Пижама');
+    if(climate === 'cold') clothes.push(
+      {text:'Тёплая куртка', note:'по прогнозу — холодно'},
+      {text:'Термобельё', note:'по прогнозу — холодно'},
+      {text:'Шапка и перчатки', note:'по прогнозу — холодно'},
+      'Тёплые носки доп.'
+    );
+    if(climate === 'hot') clothes.push(
+      {text:'Головной убор от солнца', note:'по прогнозу — жарко'},
+      'Лёгкая одежда с запасом'
+    );
+    if(climate === 'mild') clothes.push({text:'Лёгкая куртка на вечер', note:'на случай прохладного вечера'});
+    if(detectedRainy && !manualClimateOn) clothes.push({text: trip === 'hike' ? 'Дождевик' : 'Дождевик или зонт', note:'дождь в прогнозе на эти даты'});
+  }
+  if(trip === 'surf') clothes.push('Бордшорты / купальники — 2-3 шт, нужен запасной сухой', 'Рашгард с длинным рукавом — от солнца и ссадин доски', 'Пляжное пончо или накидка для переодевания', 'Парео или лёгкие штаны на выход с пляжа');
+  if(activities.includes('party')) clothes.push('Наряд для вечера/клуба');
+  if(activities.includes('meetings')) clothes.push('Деловой комплект');
+  if(activities.includes('sport') && trip !== 'bikepacking') clothes.push('Спортивная форма и кроссовки');
+  addCat(list, 'Одежда', clothes);
+
+  // Гигиена
+  if(trip === 'bikepacking' || trip === 'hike'){
+    // автономный поход/байкпакинг: минимум веса, без расчёски и полноразмерных флаконов
+    addCat(list, 'Гигиена', ['Зубная щётка и мини-паста', 'Мини-дезодорант', 'Влажные салфетки', 'Мини-мыло или сухой шампунь']);
+  } else {
+    addCat(list, 'Гигиена', ['Зубная щётка и паста', 'Дезодорант', 'Расчёска', carryon ? 'Мини-версии жидкостей до 100 мл' : 'Шампунь и гель для душа']);
+  }
+
+  // Электроника
+  const electronics = ['Зарядка от телефона', 'Повербанк', 'Наушники'];
+  if(trip === 'business') electronics.push('Ноутбук и зарядка к нему');
+  if(trip === 'surf') electronics.push('Гермомешок (dry bag) для телефона и денег на пляже');
+  addCat(list, 'Электроника', electronics);
+
+  // Аптечка — одной строкой, с суммарным весом (без мелких 15-20г позиций по отдельности)
+  const medsGroups = [];
+  medsGroups.push({ label: 'обезболивающее, пластырь, личные лекарства', keys: ['Обезболивающее', 'Пластырь', 'Личные лекарства'] });
+  if(activities.includes('trekking') || trip === 'hike'){
+    medsGroups.push({ label: 'репеллент, крем от солнца', keys: ['Репеллент от насекомых', 'Средство от солнца'] });
+  }
+  if(trip === 'bikepacking'){
+    medsGroups.push({ label: 'таблетки от горной болезни, средство от расстройства желудка, бинты и антисептик, крем SPF 50+', keys: ['Таблетки от горной болезни (если маршрут выше 3000м)', 'Средство от расстройства желудка', 'Стерильные бинты и антисептик — до жилья может быть далеко', 'Крем SPF 50+ — на высоте UV значительно сильнее'] });
+  }
+  if(trip === 'surf'){
+    medsGroups.push({ label: 'reef-safe крем, бальзам после солнца, мазь для мышц, беруши', keys: ['Солнцезащитный крем reef-safe, высокий SPF', 'Бальзам после солнца / алоэ вера', 'Мазь для мышц после сессий', 'Беруши — от «уха сёрфера» в холодной воде'] });
+  }
+  const medsWeight = medsGroups.reduce((sum, g) => sum + g.keys.reduce((s,k) => s + (ITEM_WEIGHTS[k]||0), 0), 0);
+  const medsText = `Аптечка (${medsGroups.map(g => g.label).join(', ')})`;
+  ITEM_WEIGHTS[medsText] = medsWeight;
+  addCat(list, 'Аптечка', [medsText]);
+
+  // Ребёнок — если включён тумблер, отдельная категория под возраст
+  if(withKid){
+    const kidAge = selectedSingle('kid-age-chips') || 'toddler';
+    const kidItems = ['Аптечка для ребёнка (жаропонижающее, пластыри, антисептик)', 'Копия свидетельства о рождении / документов ребёнка', 'Влажные салфетки — с большим запасом', 'Любимая игрушка или комфортер для сна'];
+    if(kidAge === 'baby'){
+      kidItems.push('Подгузники — с запасом на все дни поездки + 20%', 'Смесь и бутылочки, если не на ГВ', 'Пелёнки для смены подгузника', 'Крем от опрелостей', 'Сменные боди/комбинезоны — на 1-2 больше, чем дней', 'Соска и запасная соска', 'Слинг или переноска', 'Коляска — уточнить у авиакомпании условия провоза');
+    } else if(kidAge === 'toddler'){
+      kidItems.push('Подгузники или трусики для приучения — с запасом', 'Сменная одежда — на 2 комплекта больше обычного', 'Привычные перекусы', 'Коляска или эргорюкзак', 'Ночник или что-то привычное для сна на новом месте');
+    } else if(kidAge === 'kid'){
+      kidItems.push('Сменная одежда с запасом', 'Раскраски или игрушки для дороги', 'Детские наушники для мультиков в дороге', 'Привычные перекусы', 'Средство от укачивания, если есть склонность');
+    } else {
+      kidItems.push('Планшет или книга для дороги', 'Наушники', 'Перекусы', 'Пауэрбанк для его устройств');
+    }
+    if(climate === 'hot' || activities.includes('beach') || trip === 'surf') kidItems.push('Детский солнцезащитный крем (минеральный)', 'Панамка', kidAge === 'baby' ? 'Купальный подгузник' : 'Купальный костюм');
+    if(climate === 'cold') kidItems.push('Тёплый комбинезон и шапка для ребёнка');
+    addCat(list, 'Ребёнок', kidItems);
+  }
+
+  // По активностям
+  if(activities.includes('beach') || trip === 'surf'){
+    const beach = ['Купальник', 'Полотенце — лёгкое, быстросохнущее', 'Крем SPF', 'Тапки', 'Солнечные очки'];
+    if(trip === 'surf') beach.push('Запасные солнечные очки — на воде часто теряются', 'Многоразовая бутылка для воды');
+    addCat(list, 'Пляж', beach);
+  }
+  if(activities.includes('trekking') || trip === 'hike') addCat(list, 'Поход', ['Спальник', 'Коврик', 'Фонарик', 'Горелка и газ', 'Треккинговые палки', 'Нож/мультитул', 'Термос']);
+
+  // Сёрф-трип — снаряжение
+  if(trip === 'surf'){
+    addCat(list, 'Серф-снаряжение', [
+      'Доска для сёрфинга — или взять в аренду на месте, часто дешевле, чем провоз',
+      'Чехол для доски с мягкими вставками',
+      'Лиш (лишик) — минимум 2 шт про запас',
+      'Плавники + ключ для плавников и запасные шурупы',
+      'Воск для доски — под температуру воды в месте назначения',
+      'Гидрокостюм или гидромайка (рашгард) — по температуре воды',
+      'Рифовые тапки — от кораллов и камней',
+      'Ремкомплект для доски (эпоксидка, заплатки на дыры)'
+    ]);
+  }
+
+  // Байкпакинг — на основе реальных маршрутов (например Tian Shan Traverse в Киргизии)
+  if(trip === 'bikepacking'){
+    addCat(list, 'Вело-ремкомплект', [
+      'Запасные камеры — 2-3 шт',
+      'Ремкомплект и заплатки (+ герметик, если бескамерка)',
+      'Мультитул: шестигранники 2-8мм и торкс',
+      'Выжимка цепи + запасной замок/пин цепи',
+      'Насос с манометром',
+      'Запасные спицы и спицевой ключ',
+      'Смазка для цепи и тряпка',
+      'Запасной трос тормоза/переключателя',
+      'Запасные тормозные колодки',
+      'Изолента, стяжки, немного проволоки',
+      'Складная запасная покрышка — если маршрут вдали от вело-сервисов'
+    ]);
+    addCat(list, 'Бивуак в горах', [
+      'Ветроустойчивая палатка',
+      'Спальник с комфортом минимум до -5...-10°C — ночью в горах холодно даже летом',
+      'Коврик, тоже морозостойкий',
+      'Налобный фонарь',
+      'Компактная горелка + топливо на весь автономный участок'
+    ]);
+    addCat(list, 'Вода и еда в диких местах', [
+      'Фильтр или обеззараживатель воды — открытые источники пить сырыми нельзя',
+      'Ёмкости на 3-5 литров воды',
+      'Запас еды на 5-7 дней — между посёлками бывает 150-270 км без магазинов',
+      'Основные закупки — заранее в крупном городе, в мелких посёлках выбор очень скудный'
+    ]);
+    addCat(list, 'Навигация и связь', [
+      'Офлайн GPS-трек маршрута (Ride with GPS / Maps.me)',
+      'Ёмкий повербанк или солнечная панель — розетки будут не каждый день',
+      'Спутниковый коммуникатор (например Garmin inReach) — сотовой связи в горах почти нет',
+      'Бумажная карта маршрута как резерв на случай разрядки техники'
+    ]);
+    addCat(list, 'Деньги и документы в пути', [
+      'Наличные — обмен и банкоматы есть только в крупных городах по маршруту',
+      'Купюры некрупного номинала для мелких посёлков',
+      'Копия паспорта отдельно от оригинала',
+      'Страховка с медэвакуацией из труднодоступной местности'
+    ]);
+  }
+
+  // Развлечения в дороге — в самом конце, это приятное дополнение, а не приоритет
+  addCat(list, 'Развлечения в дороге', ['Скачать фильмы офлайн — на случай долгой дороги без интернета', 'Собрать плейлист для поездки']);
+
+  return { list, carryon, trip, days };
+}
+
+const KUPER = {label:'Купер', url:'https://kuper.ru/'};
+const SAMOKAT = {label:'Самокат', url:'https://samokat.ru/'};
+
+const ITEM_LINKS = {
+  'Страховка': [{label:'Оформить в СберСтраховании', url:'https://sberbankins.ru/products/travel-online/'}],
+  'Повербанк': [{...KUPER, url:'https://kuper.ru/categories/elektronika'}, SAMOKAT],
+  'Зарядка от телефона': [SAMOKAT],
+  'Наушники': [SAMOKAT],
+  'Крем SPF': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
+  'Крем SPF 50+ — на высоте UV значительно сильнее': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
+  'Скачать фильмы офлайн — на случай долгой дороги без интернета': [{label:'Okko', url:'https://okko.tv/'}],
+  'Собрать плейлист для поездки': [{label:'Звук', url:'https://zvuk.com/'}],
+  'Солнцезащитный крем reef-safe, высокий SPF': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
+  'Детский солнцезащитный крем (минеральный)': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT],
+  'Подгузники — с запасом на все дни поездки + 20%': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT],
+  'Влажные салфетки — с большим запасом': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT]
+};
+const CAT_LINKS = {
+  'Аптечка': [{...KUPER, url:'https://kuper.ru/categories/lekarstva'}, SAMOKAT],
+  'Электроника': [{...KUPER, url:'https://kuper.ru/categories/elektronika'}, SAMOKAT],
+  'Гигиена': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}, SAMOKAT],
+  'Пляж': [{...KUPER, url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'}],
+  'Ребёнок': [{...KUPER, url:'https://kuper.ru/categories/tovari-dlya-detej'}, SAMOKAT]
+};
+
+// примерный вес типового снаряжения (граммы) — только для похода/байкпакинга, где вес имеет значение.
+// Проставляется автоматически, ничего взвешивать не нужно — это средние ориентировочные цифры, не точные.
+const ITEM_WEIGHTS = {
+  'Велоджерси / тех.футболки — 2 шт (стираешь по ходу, а не берёшь по числу дней)': 260,
+  'Велошорты с памперсом — 2 пары': 300,
+  'Носки — 2-3 пары (мерино сохнут за ночь)': 150,
+  'Бельё — 2-3 компл.': 150,
+  'Мерино футболка или лонгслив на вечер/сон': 180,
+  'Непромокаемая куртка и штаны — на перевалах может пойти снег даже летом': 500,
+  'Тёплый слой (флис/пуховка) — днём в долине жарко, наверху заморозки': 350,
+  'Непромокаемые перчатки + отдельно лёгкие велоперчатки': 150,
+  'Баф и шапка — от солнца, ветра и холода на высоте': 80,
+  'Сандалии или гортекс-носки — для бродов через реки': 300,
+  'Солнцезащитные очки — высокогорное солнце очень жёсткое': 30,
+  'Дождевик': 300,
+
+  'Зубная щётка и мини-паста': 40,
+  'Мини-дезодорант': 30,
+  'Влажные салфетки': 50,
+  'Мини-мыло или сухой шампунь': 40,
+
+  'Зарядка от телефона': 50,
+  'Повербанк': 250,
+  'Наушники': 50,
+
+  'Обезболивающее': 20,
+  'Пластырь': 15,
+  'Личные лекарства': 30,
+  'Репеллент от насекомых': 100,
+  'Средство от солнца': 100,
+  'Таблетки от горной болезни (если маршрут выше 3000м)': 20,
+  'Средство от расстройства желудка': 20,
+  'Стерильные бинты и антисептик — до жилья может быть далеко': 100,
+  'Крем SPF 50+ — на высоте UV значительно сильнее': 100,
+
+  'Спальник': 900,
+  'Коврик': 400,
+  'Фонарик': 60,
+  'Горелка и газ': 500,
+  'Треккинговые палки': 400,
+  'Нож/мультитул': 150,
+  'Термос': 300,
+
+  'Запасные камеры — 2-3 шт': 300,
+  'Ремкомплект и заплатки (+ герметик, если бескамерка)': 150,
+  'Мультитул: шестигранники 2-8мм и торкс': 150,
+  'Выжимка цепи + запасной замок/пин цепи': 100,
+  'Насос с манометром': 120,
+  'Запасные спицы и спицевой ключ': 60,
+  'Смазка для цепи и тряпка': 100,
+  'Запасной трос тормоза/переключателя': 30,
+  'Запасные тормозные колодки': 40,
+  'Изолента, стяжки, немного проволоки': 50,
+  'Складная запасная покрышка — если маршрут вдали от вело-сервисов': 350,
+
+  'Ветроустойчивая палатка': 1500,
+  'Спальник с комфортом минимум до -5...-10°C — ночью в горах холодно даже летом': 1100,
+  'Коврик, тоже морозостойкий': 450,
+  'Налобный фонарь': 60,
+  'Компактная горелка + топливо на весь автономный участок': 500,
+
+  'Фильтр или обеззараживатель воды — открытые источники пить сырыми нельзя': 100,
+  'Ёмкости на 3-5 литров воды': 200,
+  'Запас еды на 5-7 дней — между посёлками бывает 150-270 км без магазинов': 3000,
+
+  'Ёмкий повербанк или солнечная панель — розетки будут не каждый день': 400,
+  'Спутниковый коммуникатор (например Garmin inReach) — сотовой связи в горах почти нет': 150,
+  'Бумажная карта маршрута как резерв на случай разрядки техники': 20
+};
+
+const FAVORITES_KEY = 'chemodanMastHave';
+
+function loadFavorites(){
+  try{ return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+
+function saveFavoritesArr(arr){
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(arr));
+}
+
+function renderFavorites(){
+  const favs = loadFavorites();
+  const itemsHtml = favs.length
+    ? favs.map((item, i) => `
+      <div class="item-row">
+        <input type="checkbox" id="fav-${i}" checked>
+        <label for="fav-${i}">${item}</label>
+        <span class="fav-remove" onclick="removeFavorite(${i})" title="Убрать из маст-хэвов">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </span>
+      </div>`).join('')
+    : `<div class="fav-empty">Пока пусто — добавь то, что берёшь в каждую поездку, и агент больше не будет спрашивать.</div>`;
+
+  const confirmHtml = favs.length
+    ? `<div class="fav-confirm">Обычно вы берёте: ${favs.slice(0,3).join(', ')}${favs.length > 3 ? '…' : ''} — уже добавили.</div>`
+    : '';
+
+  document.getElementById('favorites-block').innerHTML = `
+    <div class="cat-title-row"><div class="cat-title">Мои маст-хэвы</div></div>
+    ${confirmHtml}
+    ${itemsHtml}
+    <div class="add-row">
+      <input type="text" id="new-fav-input" placeholder="Например: наушники, powerbank..." onkeydown="if(event.key==='Enter'){addFavorite();}">
+      <button class="btn btn-secondary" onclick="addFavorite()">+ Запомнить</button>
+    </div>
+    <div class="fav-hint">Сохраняется на этом устройстве и подтянется в любую следующую поездку — сюда добавлять не нужно каждый раз заново.</div>
+  `;
+}
+
+function addFavorite(){
+  const input = document.getElementById('new-fav-input');
+  const val = input.value.trim();
+  if(!val) return;
+  const favs = loadFavorites();
+  favs.push(val);
+  saveFavoritesArr(favs);
+  input.value = '';
+  renderFavorites();
+  ymGoal('add_favorite');
+}
+
+function removeFavorite(index){
+  const favs = loadFavorites();
+  favs.splice(index, 1);
+  saveFavoritesArr(favs);
+  renderFavorites();
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+const YM_ID = 110908769;
+function ymGoal(name, params){
+  if(typeof ym === 'function'){ ym(YM_ID, 'reachGoal', name, params); }
+}
+let checklistInteracted = false;
+
+function buildList(){
+  const {list, carryon, trip, days} = buildChecklist();
+  const weightAware = trip === 'bikepacking' || trip === 'hike';
+  lastChecklist = list.map(cat => ({ title: cat.title, items: cat.items.map(it => {
+    const text = typeof it === 'string' ? it : it.text;
+    const note = typeof it === 'string' ? null : (it.note || null);
+    return { text, note, done:false, weight: weightAware ? (ITEM_WEIGHTS[text] || 0) : 0 };
+  }) }));
+  checklistInteracted = false;
+  ymGoal('build_list', {trip});
+
+  renderChecklist();
+  document.getElementById('carryon-warn').style.display = carryon ? 'block' : 'none';
+  setBag(recommendBag(trip, days, carryon));
+  renderFavorites();
+  updateProgress();
+  document.getElementById('form-card').style.display='none';
+  document.getElementById('result').style.display='block';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function renderChecklist(){
+  const container = document.getElementById('checklist');
+  const hasAny = lastChecklist.some(cat => cat.items.length);
+  if(!hasAny){
+    container.innerHTML = '<div class="fav-empty">Список пуст — начни заново или добавь свои пункты в «Мои маст-хэвы» ниже.</div>';
+    document.getElementById('weight-breakdown').style.display = 'none';
+    updateProgress();
+    return;
+  }
+  container.innerHTML = lastChecklist.map((cat, ci) => {
+    if(!cat.items.length) return '';
+    const catLinksHtml = (CAT_LINKS[cat.title] || [])
+      .map(l => `<a href="${l.url}" target="_blank" rel="noopener" onclick="ymGoal('affiliate_click',{service:'${l.label}',place:'category'})">${l.label}</a>`).join('');
+    const catWeight = cat.items.reduce((s,i) => s + (i.weight||0), 0);
+    return `<div class="cat-block">
+      <div class="cat-title-row">
+        <div class="cat-title">${cat.title}${catWeight > 0 ? ` · ${formatWeight(catWeight)}` : ''}</div>
+        ${catLinksHtml ? `<div class="cat-links">${catLinksHtml}</div>` : ''}
+      </div>
+      ${cat.items.map((item, ii) => {
+        const id = `chk-${ci}-${ii}`;
+        const itemLinks = ITEM_LINKS[item.text];
+        const linkHtml = itemLinks ? itemLinks.map(l => `<a class="item-link" href="${l.url}" target="_blank" rel="noopener" onclick="ymGoal('affiliate_click',{service:'${l.label}',place:'item'})">${l.label} →</a>`).join('') : '';
+        const weightHtml = item.weight > 0 ? `<span class="item-weight" onclick="startEditWeight(${ci},${ii})" title="Нажми, чтобы изменить вес">${formatWeight(item.weight)}</span>` : '';
+        const noteHtml = item.note ? `<span class="item-note">${escapeHtml(item.note)}</span>` : '';
+        return `<div class="item-row${item.done ? ' checked' : ''}" id="row-${id}">
+          <input type="checkbox" id="${id}" ${item.done ? 'checked' : ''} onchange="toggleItem(${ci},${ii},'${id}')">
+          <span class="item-main" id="main-${id}">
+            <label for="${id}">${escapeHtml(item.text)}</label>
+            ${weightHtml}
+            ${linkHtml}
+            ${noteHtml}
+          </span>
+          <span class="item-actions" id="actions-${id}">
+            <span class="item-action edit" onclick="startEditItem(${ci},${ii})" title="Редактировать пункт">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </span>
+            <span class="item-action delete" onclick="deleteItem(${ci},${ii})" title="Убрать из списка">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </span>
+          </span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+  renderWeightBreakdown();
+}
+
+function formatWeight(g){
+  if(!g || g <= 0) return '';
+  return g >= 1000 ? `≈${(g/1000).toFixed(g % 1000 === 0 ? 0 : 1)} кг` : `≈${Math.round(g)} г`;
+}
+
+const WEIGHT_PALETTE = ['#60a5fa','#4ade80','#ff7a45','#f472b6','#facc15','#a78bfa','#22d3ee','#fb7185','#34d399','#818cf8'];
+
+function renderWeightBreakdown(){
+  const block = document.getElementById('weight-breakdown');
+  if(!lastChecklist){ block.style.display = 'none'; return; }
+  const cats = lastChecklist
+    .map(cat => ({ title: cat.title, weight: cat.items.reduce((s,i) => s + (i.weight||0), 0) }))
+    .filter(c => c.weight > 0);
+  const total = cats.reduce((s,c) => s + c.weight, 0);
+  if(!total){ block.style.display = 'none'; return; }
+  block.style.display = 'block';
+  document.getElementById('weight-bar').innerHTML = cats.map((c, i) =>
+    `<span style="width:${(c.weight/total*100).toFixed(2)}%;background:${WEIGHT_PALETTE[i % WEIGHT_PALETTE.length]}" title="${c.title}: ${formatWeight(c.weight)}"></span>`
+  ).join('');
+  document.getElementById('weight-legend').innerHTML = cats.map((c, i) =>
+    `<span><span class="dot" style="background:${WEIGHT_PALETTE[i % WEIGHT_PALETTE.length]}"></span>${c.title} — ${formatWeight(c.weight)}</span>`
+  ).join('');
+}
+
+function toggleItem(ci, ii, id){
+  const box = document.getElementById(id);
+  lastChecklist[ci].items[ii].done = box.checked;
+  document.getElementById(`row-${id}`).classList.toggle('checked', box.checked);
+  if(!checklistInteracted && box.checked){
+    checklistInteracted = true;
+    ymGoal('item_checked');
+  }
+  updateProgress();
+}
+
+function startEditWeight(ci, ii){
+  const id = `chk-${ci}-${ii}`;
+  const item = lastChecklist[ci].items[ii];
+  const mainEl = document.getElementById(`main-${id}`);
+  if(!mainEl) return;
+  const weightSpan = mainEl.querySelector('.item-weight');
+  if(!weightSpan) return;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '5';
+  input.className = 'item-edit-weight';
+  input.value = item.weight || 0;
+  weightSpan.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const val = parseInt(input.value, 10);
+    lastChecklist[ci].items[ii].weight = (isNaN(val) || val < 0) ? 0 : val;
+    renderChecklist();
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (ev) => {
+    if(ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+    else if(ev.key === 'Escape'){ ev.preventDefault(); renderChecklist(); }
+  });
+}
+
+function startEditItem(ci, ii){
+  const id = `chk-${ci}-${ii}`;
+  const item = lastChecklist[ci].items[ii];
+  const mainEl = document.getElementById(`main-${id}`);
+  const actionsEl = document.getElementById(`actions-${id}`);
+  mainEl.innerHTML = `<input type="text" class="item-edit-input" id="edit-input-${id}" value="${escapeHtml(item.text)}">`;
+  actionsEl.innerHTML = `
+    <span class="item-action save" onclick="saveEditItem(${ci},${ii})" title="Сохранить">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </span>
+    <span class="item-action delete" onclick="renderChecklist()" title="Отменить">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </span>
+  `;
+  const input = document.getElementById(`edit-input-${id}`);
+  input.focus();
+  input.select();
+  input.addEventListener('keydown', (ev) => {
+    if(ev.key === 'Enter'){ ev.preventDefault(); saveEditItem(ci, ii); }
+    else if(ev.key === 'Escape'){ ev.preventDefault(); renderChecklist(); }
+  });
+}
+
+function saveEditItem(ci, ii){
+  const id = `chk-${ci}-${ii}`;
+  const input = document.getElementById(`edit-input-${id}`);
+  const val = input.value.trim();
+  if(val) lastChecklist[ci].items[ii].text = val;
+  renderChecklist();
+  updateProgress();
+}
+
+function deleteItem(ci, ii){
+  const id = `chk-${ci}-${ii}`;
+  const row = document.getElementById(`row-${id}`);
+  const finish = () => {
+    lastChecklist[ci].items.splice(ii, 1);
+    renderChecklist();
+    updateProgress();
+  };
+  if(row){
+    row.classList.add('removing');
+    setTimeout(finish, 160);
+  } else {
+    finish();
+  }
+}
+
+function updateProgress(){
+  const boxes = document.querySelectorAll('#checklist input[type=checkbox]');
+  const checked = document.querySelectorAll('#checklist input[type=checkbox]:checked').length;
+  const total = boxes.length;
+  const pct = total ? Math.round(checked / total * 100) : 0;
+
+  const fill = document.getElementById('progress-bar-fill');
+  if(fill) fill.style.width = pct + '%';
+  document.getElementById('progress-count').textContent = `${checked} из ${total} собрано (${pct}%)`;
+  document.getElementById('progress-line').textContent = checked === total && total ? 'Всё собрано — можно ехать.' : '';
+
+  const totalWeight = lastChecklist ? lastChecklist.reduce((sum, cat) => sum + cat.items.reduce((s,i) => s + (i.weight||0), 0), 0) : 0;
+  const weightEl = document.getElementById('progress-weight');
+  if(weightEl) weightEl.textContent = totalWeight > 0 ? `Вес: ${formatWeight(totalWeight)}` : '';
+}
+
+function encodeState(obj){
+  const json = JSON.stringify(obj);
+  return LZString.compressToEncodedURIComponent(json);
+}
+
+function decodeState(str){
+  try{
+    const json = LZString.decompressFromEncodedURIComponent(str);
+    if(!json) return null;
+    return JSON.parse(json);
+  }catch(e){ return null; }
+}
+
+function packChecklist(list){
+  return list.map(cat => [cat.title, cat.items.map(it =>
+    (!it.done && !it.weight) ? it.text : [it.text, it.done?1:0, it.weight||0]
+  )]);
+}
+
+function unpackChecklist(packed){
+  return packed.map(([title, items]) => ({
+    title,
+    items: items.map(it => Array.isArray(it)
+      ? {text: it[0], done: it[1]===1, weight: it[2]||0}
+      : {text: it, done:false, weight:0})
+  }));
+}
+
+const SHORTENER_URL = 'https://mala.i9672380087.workers.dev';
+
+async function shareLink(){
+  if(!lastChecklist) return;
+  const state = {
+    v: 1,
+    bag: document.querySelector('#bag-chips .chip.active')?.dataset.v || '',
+    list: packChecklist(lastChecklist)
+  };
+  const encoded = encodeState(state);
+  const longUrl = `${location.origin}${location.pathname}#s=${encoded}`;
+  const text = 'Мой список вещей для поездки — глянь:';
+  ymGoal('share_link');
+
+  let shortUrl = longUrl;
+  try{
+    const resp = await fetch(`${SHORTENER_URL}/api/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: longUrl })
+    });
+    if(resp.ok){
+      const data = await resp.json();
+      if(data.id) shortUrl = `${SHORTENER_URL}/${data.id}`;
+    }
+  }catch(e){
+    // сеть/воркер недоступны — просто используем длинную ссылку как есть
+  }
+
+  if(navigator.share){
+    navigator.share({ title: 'Список вещей для поездки', text, url: shortUrl });
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(`${text}\n${shortUrl}`);
+    alert('Ссылка скопирована — можно скидывать.');
+  } else {
+    prompt('Скопируй ссылку:', shortUrl);
+  }
+}
+
+function loadFromHash(){
+  const m = location.hash.match(/^#s=(.+)$/);
+  if(!m) return false;
+  const state = decodeState(m[1]);
+  if(!state || !state.list) return false;
+  lastChecklist = unpackChecklist(state.list);
+  checklistInteracted = false;
+  renderChecklist();
+  if(state.bag) setBag(state.bag);
+  renderFavorites();
+  updateProgress();
+  document.getElementById('form-card').style.display='none';
+  document.getElementById('result').style.display='block';
+  return true;
+}
+
+function copyList(){
+  if(!lastChecklist) return;
+  let text = lastChecklist.filter(cat => cat.items.length).map(cat => `${cat.title}:\n` + cat.items.map(i => '- '+i.text).join('\n')).join('\n\n');
+  const favs = loadFavorites();
+  if(favs.length){
+    text += '\n\nМои маст-хэвы:\n' + favs.map(i => '- '+i).join('\n');
+  }
+  ymGoal('copy_list');
+  if(navigator.share){ navigator.share({text}); }
+  else { navigator.clipboard.writeText(text); alert('Список скопирован.'); }
+}
+
+function reset(){
+  document.getElementById('result').style.display='none';
+  document.getElementById('form-card').style.display='block';
+}
+
+function giveFeedback(){
+  const subject = encodeURIComponent('Отклик на приложение Mala');
+  const body = encodeURIComponent('Что понравилось / что нет:\n\n');
+  window.location.href = `mailto:i9672380087@gmail.com?subject=${subject}&body=${body}`;
+}
+
+document.getElementById('destination-clear').style.display = document.getElementById('destination').value.trim() ? 'flex' : 'none';
+if(!loadFromHash()){ detectWeather(); }
+</script>
+</body>
+</html>
