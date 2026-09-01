@@ -351,7 +351,7 @@ function onDestinationInput(){
 async function fetchSuggestions(val){
   lastSuggestQuery = val;
   try{
-    const data = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=6&language=ru&format=json`, 1);
+    const data = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=20&language=ru&format=json`, 1);
     if(document.getElementById('destination').value.trim() !== val) return; // устарело, ввели что-то другое
     renderSuggestions(data.results || []);
   }catch(e){
@@ -362,8 +362,9 @@ async function fetchSuggestions(val){
 function renderSuggestions(results){
   const box = document.getElementById('city-suggestions');
   if(!results.length){ hideSuggestions(); return; }
-  window._citySuggestions = results;
-  box.innerHTML = results.map((r, i) => `
+  const sorted = [...results].sort((a, b) => (b.population || 0) - (a.population || 0)).slice(0, 8);
+  window._citySuggestions = sorted;
+  box.innerHTML = sorted.map((r, i) => `
     <div class="city-suggestion-item" onmousedown="event.preventDefault();selectSuggestion(${i})">
       <span class="cs-name">${escapeHtml(r.name)}</span>
       <span class="cs-region">${escapeHtml([r.admin1 && r.admin1 !== r.name ? r.admin1 : '', r.country || ''].filter(Boolean).join(', '))}</span>
@@ -423,7 +424,7 @@ async function detectWeather(){
   statusEl.textContent = `Смотрю погоду в городе «${city}»…`;
 
   try{
-    const geoData = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=8&language=ru&format=json`);
+    const geoData = await fetchJsonWithRetry(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=20&language=ru&format=json`);
     if(requestId !== weatherRequestId) return; // ввели другой город, пока шёл этот запрос
     const candidates = geoData.results || [];
     // сперва ищем точное совпадение по названию (иначе поиск по префиксу может подсунуть
@@ -1227,6 +1228,7 @@ function giveFeedback(){
   window.location.href = `mailto:i9672380087@gmail.com?subject=${subject}&body=${body}`;
 }
 
+document.getElementById('destination-clear').style.display = document.getElementById('destination').value.trim() ? 'flex' : 'none';
 if(!loadFromHash()){ detectWeather(); }
 </script>
 </body>
