@@ -1,0 +1,364 @@
+<title>Mala Gen UI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: два экрана. Старт — один вопрос «куда едешь». Результат — сводка сверху, уточнения, чек-лист как главное, остальное ниже; одно поле правки снизу. */
+:root{
+  --bg:#f6f7f6; --surface:#ffffff; --sunk:#eef0ee; --line:#e2e5e2;
+  --fg:#1b1f1d; --muted:#6b726e; --accent:#2f6f5e; --accent-ink:#ffffff; --accent-soft:#e6f0ec;
+  --warn:#8a5a00; --warn-bg:#fbf3e2;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121514; --surface:#1a1e1c; --sunk:#222725; --line:#2c322f;
+  --fg:#eceeed; --muted:#99a19d; --accent:#7cc4ad; --accent-ink:#0f1a16; --accent-soft:#1f2d28;
+  --warn:#e6b45c; --warn-bg:#2a2418; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#121514; --surface:#1a1e1c; --sunk:#222725; --line:#2c322f;
+  --fg:#eceeed; --muted:#99a19d; --accent:#7cc4ad; --accent-ink:#0f1a16; --accent-soft:#1f2d28;
+  --warn:#e6b45c; --warn-bg:#2a2418; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:540px;margin:0 auto;padding-block:24px 120px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font-weight:800;font-size:15px;letter-spacing:-.01em;color:var(--muted);margin-bottom:28px}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:700;cursor:pointer}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary:disabled{opacity:.45;cursor:default}
+.btn-quiet{background:none;border:0;color:var(--muted);font-weight:600;cursor:pointer;padding:6px 0}
+.btn-quiet:hover{color:var(--fg)}
+
+/* ===== старт ===== */
+#start h1{font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+#start .lead{color:var(--muted);margin:0 0 20px}
+#brief{width:100%;min-height:96px;resize:vertical;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:16px;outline:none}
+#brief:focus{border-color:var(--accent)}
+.start-row{display:flex;justify-content:flex-end;margin:10px 0 28px}
+.ex-title{font-size:13px;color:var(--muted);margin-bottom:8px}
+.ex-list{display:flex;flex-direction:column;gap:8px}
+.ex{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.ex:hover{border-color:var(--accent)}
+.ex small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.note-line{font-size:13px;color:var(--muted);margin-top:16px;min-height:20px}
+
+/* ===== результат ===== */
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.top .brand{margin:0}
+.summary h2{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin:0 0 4px;text-wrap:balance}
+.summary .meta{color:var(--muted);font-size:14px}
+.weather{display:flex;gap:10px;align-items:baseline;margin-top:12px;font-size:14px}
+.weather b{font-family:var(--f-mono);font-weight:500;font-variant-numeric:tabular-nums}
+.weather span{color:var(--muted)}
+
+.section{margin-top:22px}
+.section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+
+/* уточнения */
+.clarify{background:var(--accent-soft);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.q .qt{font-weight:700;margin-bottom:8px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer}
+.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.clarify .apply{align-self:flex-start;padding:10px 16px}
+
+/* советы: багаж, вес, предупреждения */
+.facts{display:flex;flex-direction:column;gap:8px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px}
+.fact b{display:block;font-size:14px}
+.fact span{color:var(--muted)}
+.fact.warn{background:var(--warn-bg);border-color:transparent}
+.fact.warn b{color:var(--warn)}
+.wbar{height:6px;border-radius:4px;background:var(--sunk);overflow:hidden;margin:8px 0 4px}
+.wbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.wbar.over i{background:var(--warn)}
+.wnum{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* список — главное */
+.progress{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ptrack{flex:1;height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}
+.ptrack i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.pnum{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.cat{padding:4px 16px 8px}
+.cat+.cat{border-top:1px solid var(--line)}
+.cat h3{font-size:14px;font-weight:700;margin:12px 0 2px;display:flex;justify-content:space-between}
+.cat h3 span{font-family:var(--f-mono);font-weight:400;font-size:12px;color:var(--muted)}
+.items{list-style:none;margin:0;padding:0}
+.item{display:grid;grid-template-columns:22px 1fr auto;gap:10px;padding:9px 0;align-items:start}
+.item input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--accent);cursor:pointer}
+.item .t{min-width:0}
+.item label{cursor:pointer}
+.item.done label{color:var(--muted);text-decoration:line-through}
+.item .n{display:block;font-size:12.5px;color:var(--muted)}
+.item .buy{font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;white-space:nowrap;padding-top:1px}
+.item .buy:hover{text-decoration:underline}
+
+/* потом */
+.later{display:flex;flex-direction:column;gap:8px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.steps li{display:grid;grid-template-columns:84px 1fr;gap:10px;font-size:14px}
+.steps .w{color:var(--muted);font-size:13px}
+.steps .x{min-width:0}
+.offer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.offer div{flex:1 1 200px;min-width:0;font-size:14px}
+.offer div span{display:block;color:var(--muted)}
+.offer a{font-weight:700;font-size:13px;color:var(--accent);text-decoration:none;white-space:nowrap}
+
+.skeleton{height:14px;border-radius:6px;background:var(--sunk);margin:10px 0;animation:pulse 1.2s infinite ease-in-out}
+@keyframes pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}.ptrack i{transition:none}}
+
+.actions{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
+
+/* правка снизу */
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.dock form{max-width:540px;margin:0 auto;display:flex;gap:8px}
+.dock input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none}
+.dock input:focus{border-color:var(--accent)}
+.dock .btn{padding:12px 16px}
+.status{font-size:13px;color:var(--muted);max-width:540px;margin:0 auto 6px;display:flex;justify-content:space-between;gap:10px}
+.status button{background:none;border:0;color:var(--fg);font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
+</style>
+
+<div class="wrap">
+  <!-- ===== СТАРТ ===== -->
+  <section id="start">
+    <div class="brand">Mala</div>
+    <h1>Куда едешь?</h1>
+    <p class="lead">Напиши как другу: куда, на сколько, с кем и что будешь делать. Список соберётся под эту поездку.</p>
+    <form id="ask">
+      <label for="brief" hidden>Описание поездки</label>
+      <textarea id="brief" placeholder="Лечу в Казань на 4 дня в начале ноября с сыном 2 лет, только ручная кладь"></textarea>
+      <div class="start-row"><button class="btn btn-primary" id="go" type="submit">Собрать список</button></div>
+    </form>
+    <div class="ex-title">Или начни с примера</div>
+    <div class="ex-list" id="examples"></div>
+    <div class="note-line" id="startNote"></div>
+  </section>
+
+  <!-- ===== РЕЗУЛЬТАТ ===== -->
+  <section id="result" hidden>
+    <div class="top"><div class="brand">Mala</div><button class="btn-quiet" id="newTrip" type="button">Другая поездка</button></div>
+    <div class="summary" id="summary"></div>
+    <div class="section" id="clarifyBox" hidden><div class="section-title">Уточни, чтобы список был точнее</div><div class="clarify" id="clarify"></div></div>
+    <div class="section" id="factsBox" hidden><div class="section-title">Учти</div><div class="facts" id="facts"></div></div>
+    <div class="section" id="listBox">
+      <div class="section-title">Что взять</div>
+      <div class="progress"><div class="ptrack"><i id="pbar" style="width:0"></i></div><span class="pnum" id="pnum">0 из 0</span></div>
+      <div class="list" id="list"></div>
+      <div class="actions"><button class="btn-quiet" id="copy" type="button">Скопировать список</button></div>
+    </div>
+    <div class="section" id="laterBox" hidden><div class="section-title">Перед выездом</div><div class="later" id="later"></div></div>
+  </section>
+</div>
+
+<div class="dock" id="dock" hidden>
+  <div class="status" id="status"></div>
+  <form id="refine">
+    <input id="refineInput" placeholder="Что поменять? Например: «возьму ноутбук» или «+2 дня»" autocomplete="off">
+    <button class="btn btn-primary" type="submit" id="refineGo">Обновить</button>
+  </form>
+</div>
+
+<script>
+const PARTNERS = {
+  insurance:{label:'СберСтрахование', url:'https://sberbankins.ru/products/travel-online/'},
+  kuper:{label:'Купер', url:'https://kuper.ru/'},
+  kuper_pharmacy:{label:'Купер', url:'https://kuper.ru/categories/lekarstva'},
+  kuper_kids:{label:'Купер', url:'https://kuper.ru/categories/tovari-dlya-detej'},
+  kuper_cosmetics:{label:'Купер', url:'https://kuper.ru/categories/kosmetika-i-parfyumeriya'},
+  kuper_electronics:{label:'Купер', url:'https://kuper.ru/categories/elektronika'},
+  samokat:{label:'Самокат', url:'https://samokat.ru/'},
+  okko:{label:'Okko', url:'https://okko.tv/'},
+  zvuk:{label:'Звук', url:'https://zvuk.com/'}
+};
+const EXAMPLES = [
+  ['Казань с ребёнком','4 дня в начале ноября, сыну 2 года, только ручная кладь'],
+  ['Байкпакинг по Алтаю','6 дней в августе, ночёвки в палатке'],
+  ['Командировка в Новосибирск','2 дня, две встречи и ужин с клиентом'],
+  ['Бали','12 дней, сёрф и немного работы с ноутбуком']
+];
+
+const KEY='mala-genui-v2';
+const fresh=()=>({brief:'',answers:{},pending:{},qText:{},refinements:[],spec:[],checked:{}});
+let state=load()||fresh();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&Array.isArray(s.spec)?s:null}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>Number.isFinite(Number(v))?Number(v):null;
+const kg=g=>(g/1000).toLocaleString('ru-RU',{maximumFractionDigits:1})+' кг';
+const itemKey=(c,it)=>String(c.id||c.title)+'/'+(it.id||it.text);
+
+/* ===== рендер по слотам ===== */
+function render(){
+  const has=state.spec.length>0||busy;
+  $('start').hidden=has; $('result').hidden=!has; $('dock').hidden=!has;
+  if(!has){ $('brief').value=state.brief||''; return; }
+  const by=t=>state.spec.filter(c=>c.type===t);
+
+  // сводка
+  const trip=by('trip')[0], cl=by('climate')[0];
+  const fmt=v=>v===null?'—':(v>0?'+':'')+Math.round(v)+'°';
+  $('summary').innerHTML = trip
+    ? `<h2>${esc(trip.title)}</h2><div class="meta">${esc([trip.route,...(trip.facts||[])].filter(Boolean).join(' · '))}</div>`
+      + (cl?`<div class="weather"><b>${fmt(num(cl.day_c))} / ${fmt(num(cl.night_c))}</b><span>${esc(cl.summary)} Обычно в это время, не прогноз.</span></div>`:'')
+    : `<div class="skeleton" style="width:60%;height:22px"></div><div class="skeleton" style="width:85%"></div>`;
+
+  // уточнения
+  const qs=by('question');
+  $('clarifyBox').hidden=!qs.length;
+  const nPending=Object.keys(state.pending).length;
+  $('clarify').innerHTML=qs.map(q=>{
+    const id=String(q.id||q.text), chosen=[].concat(state.pending[id]??state.answers[id]??[]);
+    return `<div class="q"><div class="qt">${esc(q.text)}</div><div class="opts">${(q.options||[]).map(o=>
+      `<button type="button" class="opt" data-q="${esc(id)}" data-multi="${q.multi?1:0}" data-text="${esc(q.text)}" aria-pressed="${chosen.includes(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+  }).join('') + (nPending?`<button class="btn btn-primary apply" id="applyAnswers" type="button" ${busy?'disabled':''}>Обновить список с ответами</button>`:'');
+
+  // учти: предупреждения, багаж, вес
+  const lists=by('checklist');
+  const total=lists.reduce((s,l)=>s+(l.items||[]).reduce((a,it)=>a+(num(it.grams)||0),0),0);
+  const facts=[];
+  by('alert').forEach(a=>facts.push(`<div class="fact ${a.tone==='warn'?'warn':''}"><b>${esc(a.title||'Важно')}</b><span>${esc(a.text)}</span></div>`));
+  by('bag').forEach(b=>facts.push(`<div class="fact"><b>${esc(b.label)}</b><span>${esc(b.reason)}</span></div>`));
+  const w=by('weight')[0];
+  if(w&&total){
+    const lim=(num(w.limit_kg)||0)*1000, over=lim&&total>lim;
+    facts.push(`<div class="fact"><b>Вес вещей ≈ ${kg(total)}</b>${lim?`<div class="wbar ${over?'over':''}"><i style="width:${Math.min(100,total/lim*100)}%"></i></div><span class="wnum">${over?'больше лимита ':'в пределах лимита '}${kg(lim)}</span>`:'<span>ориентир по типовым вещам</span>'}</div>`);
+  }
+  $('factsBox').hidden=!facts.length; $('facts').innerHTML=facts.join('');
+
+  // список
+  let all=0,done=0;
+  $('list').innerHTML = lists.length ? lists.map(c=>{
+    const items=c.items||[]; const d=items.filter(it=>state.checked[itemKey(c,it)]).length; all+=items.length; done+=d;
+    return `<div class="cat"><h3>${esc(c.title)}<span>${d}/${items.length}</span></h3><ul class="items">${items.map(it=>{
+      const k=itemKey(c,it), on=!!state.checked[k], p=PARTNERS[it.buy], cid='i_'+k.replace(/[^\w-]/g,'_');
+      return `<li class="item${on?' done':''}"><input type="checkbox" id="${esc(cid)}" data-key="${esc(k)}" ${on?'checked':''}>
+        <div class="t"><label for="${esc(cid)}">${esc(it.text)}${it.qty?` — ${esc(it.qty)}`:''}</label>${it.note?`<span class="n">${esc(it.note)}</span>`:''}</div>
+        ${p&&!on?`<a class="buy" href="${p.url}" target="_blank" rel="noopener">${esc(p.label)}</a>`:'<span></span>'}</li>`;}).join('')}</ul></div>`;
+  }).join('') : `<div class="cat"><div class="skeleton" style="width:40%"></div><div class="skeleton"></div><div class="skeleton" style="width:75%"></div><div class="skeleton" style="width:65%"></div></div>`;
+  $('pbar').style.width=all?(done/all*100)+'%':'0'; $('pnum').textContent=`${done} из ${all}`;
+
+  // перед выездом
+  const later=[];
+  by('timeline').forEach(t=>later.push(`<ol class="steps">${(t.steps||[]).map(s=>`<li><span class="w">${esc(s.when)}</span><span class="x">${esc(s.text)}</span></li>`).join('')}</ol>`));
+  by('offer').forEach(o=>{const p=PARTNERS[o.partner]; if(p) later.push(`<div class="offer"><div>${esc(o.title)}<span>${esc(o.text)}</span></div><a href="${p.url}" target="_blank" rel="noopener">${esc(p.label)} →</a></div>`);});
+  $('laterBox').hidden=!later.length; $('later').innerHTML=later.join('');
+}
+
+function setStatus(t,stop){
+  $('status').innerHTML=esc(t)+(stop?' <button type="button" id="stopBtn">Остановить</button>':'');
+  $('startNote').textContent=t;
+}
+
+/* ===== события ===== */
+document.addEventListener('change',e=>{
+  const k=e.target.dataset&&e.target.dataset.key; if(!k) return;
+  if(e.target.checked) state.checked[k]=true; else delete state.checked[k];
+  save(); render();
+});
+document.addEventListener('click',e=>{
+  const o=e.target.closest('.opt');
+  if(o){
+    const id=o.dataset.q, v=o.textContent, multi=o.dataset.multi==='1';
+    let cur=[].concat(state.pending[id]??state.answers[id]??[]);
+    cur=multi?(cur.includes(v)?cur.filter(x=>x!==v):[...cur,v]):[v];
+    state.pending[id]=cur; state.qText[id]=o.dataset.text; save(); render(); return;
+  }
+  if(e.target.id==='applyAnswers'){ generate(); return; }
+  if(e.target.id==='stopBtn'&&ctl){ ctl.abort(); return; }
+  const ex=e.target.closest('.ex');
+  if(ex){ $('brief').value=ex.dataset.text; $('brief').focus(); }
+});
+$('examples').innerHTML=EXAMPLES.map(([t,d])=>`<button type="button" class="ex" data-text="${esc(t+', '+d)}"><b>${esc(t)}</b><small>${esc(d)}</small></button>`).join('');
+$('ask').addEventListener('submit',e=>{
+  e.preventDefault(); const t=$('brief').value.trim(); if(!t){$('brief').focus();return;}
+  state=fresh(); state.brief=t; generate();
+});
+$('refine').addEventListener('submit',e=>{
+  e.preventDefault(); const t=$('refineInput').value.trim(); if(!t||busy) return;
+  state.refinements.push(t); $('refineInput').value=''; generate();
+});
+$('newTrip').addEventListener('click',()=>{ if(ctl) ctl.abort(); state=fresh(); save(); setStatus(''); render(); window.scrollTo({top:0}); $('brief').focus(); });
+$('copy').addEventListener('click',async()=>{
+  const txt=state.spec.filter(c=>c.type==='checklist').map(c=>c.title+':\n'+(c.items||[]).map(it=>`${state.checked[itemKey(c,it)]?'☑':'☐'} ${it.text}${it.qty?' — '+it.qty:''}`).join('\n')).join('\n\n');
+  try{await navigator.clipboard.writeText(txt); $('copy').textContent='Скопировано'; setTimeout(()=>$('copy').textContent='Скопировать список',1500);}
+  catch(err){ $('copy').textContent='Не скопировалось — выдели список вручную'; }
+});
+
+/* ===== генерация ===== */
+let sample=null, busy=false, ctl=null;
+const SCHEMA=`Компоненты (одна строка = один JSON-объект, поле "type" обязательно):
+{"type":"trip","title":"имя поездки, 2-4 слова","route":"куда · сколько дней · когда","facts":["кто едет","багаж"]}
+{"type":"climate","place":"место","when":"период","day_c":число,"night_c":число,"summary":"1 короткая фраза про осадки/ветер, важное для одежды"}
+{"type":"question","id":"slug","text":"уточняющий вопрос","options":["2-4 коротких варианта"],"multi":false}
+{"type":"alert","tone":"warn|info","title":"2-4 слова","text":"1 фраза"}
+{"type":"bag","pick":"backpack|cabin|checked|duffel","label":"во что паковать","reason":"1 фраза почему"}
+{"type":"weight","limit_kg":число или null}
+{"type":"checklist","id":"slug","title":"категория","items":[{"id":"slug","text":"вещь","qty":"сколько, если важно","note":"нюанс именно этой поездки, если есть","grams":число,"buy":"ключ партнёра или null"}]}
+{"type":"timeline","steps":[{"when":"За 3 дня","text":"..."}]}
+{"type":"offer","partner":"ключ","title":"2-4 слова","text":"1 фраза, зачем в этой поездке"}
+Ключи партнёров (других нет): ${Object.keys(PARTNERS).join(', ')}.`;
+
+function buildPrompt(){
+  const qa=Object.entries(state.answers).map(([id,v])=>`- ${state.qText[id]||id}: ${[].concat(v).join(', ')}`).join('\n');
+  const keep=state.spec.filter(c=>c.type==='checklist').flatMap(c=>(c.items||[]).filter(it=>state.checked[itemKey(c,it)]).map(it=>`${c.id}/${it.id}`));
+  return `Ты — движок генеративного интерфейса приложения Mala (сборы в поездку). Ты не пишешь ответ текстом — ты собираешь экран из готовых компонентов.
+Сегодня ${new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}.
+
+Поездка со слов пользователя:
+"""${state.brief}"""
+${qa?`\nОтветы на уточнения:\n${qa}\n`:''}${state.refinements.length?`\nПравки (последняя важнее):\n${state.refinements.map(r=>'- '+r).join('\n')}\n`:''}${keep.length?`\nУже собрано — сохрани эти вещи с теми же id: ${keep.join(', ')}\n`:''}
+${SCHEMA}
+
+Правила:
+- Порядок вывода: trip, climate (если известны место и период), question, alert, bag, weight, checklist, timeline, offer.
+- question: 0-2 и только если ответ реально меняет список и его нет в описании или ответах. Не спрашивай то, что уже отвечено.
+- alert: 0-2, только реальные риски (документы на ребёнка, визы, жидкости, высота, жара). bag — один. weight — только для ручной клади, похода, байкпакинга или при лимите.
+- checklist: 3-6 категорий, вещи конкретные под погоду, длительность (стирка вместо «по числу дней»), активности, детей. Без дублей и банальностей. grams — вес типовой вещи, 0 для документов и того, что едет на тебе. buy — только если вещь логично докупить.
+- timeline: 3-4 шага. offer: 0-2, только если партнёр закрывает потребность.
+- По-русски, коротко, на «ты».
+Вывод строго: каждая строка — один JSON-объект, без markdown и текста вокруг.`;
+}
+
+async function generate(){
+  if(busy) return;
+  if(!sample){ setStatus('Сборка работает, когда страница открыта в Claude.'); return; }
+  busy=true; ctl=new AbortController();
+  state.answers={...state.answers,...state.pending}; state.pending={};
+  const prompt=buildPrompt(), prev=state.spec;
+  state.spec=[]; render();
+  $('go').disabled=true; $('refineGo').disabled=true;
+  setStatus('Собираю список…',true);
+  let pending='', got=0;
+  const eat=line=>{
+    line=line.trim().replace(/^```\w*|```$/g,'').replace(/,$/,'').trim(); if(!line||line[0]!=='{') return;
+    try{const c=JSON.parse(line); if(c&&c.type){state.spec.push(c); got++; render();}}catch(e){}
+  };
+  try{
+    await sample(prompt,{signal:ctl.signal,cache:false,onText:({delta})=>{const ls=(pending+delta).split('\n'); pending=ls.pop(); ls.forEach(eat);}});
+    eat(pending);
+    setStatus(got?'':'Не получилось собрать — опиши поездку чуть подробнее.');
+    if(!got) state.spec=prev;
+  }catch(e){
+    eat(pending); if(!got) state.spec=prev;
+    setStatus({cancelled:'Остановлено.',not_granted:'Без разрешения на Claude сборка недоступна.',rate_limited:'Слишком много запросов. Подожди минуту.',
+      session_expired:'Войди в Claude заново.',refused:'Не получилось — переформулируй описание.'}[e&&e.code]||'Связь прервалась, попробуй ещё раз.');
+    if(e&&(e.code==='not_granted'||e.code==='sampling_disabled')) sample=null;
+  }finally{
+    busy=false; ctl=null; $('go').disabled=false; $('refineGo').disabled=false; save(); render();
+  }
+}
+
+render();
+(window.claude&&window.claude.use?window.claude.use('sample'):Promise.resolve(null)).then(s=>{
+  sample=s; if(!s) setStatus('Сборка работает, когда страница открыта в Claude.');
+});
+</script>
